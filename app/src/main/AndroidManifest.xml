@@ -4,8 +4,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
-    <application android:label="@string/app_name" android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:icon="@drawable/ic_torch" android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" android:supportsRtl="true">
+    <application android:label="@string/app_name" android:theme="@style/AppTheme"
+        android:icon="@drawable/ic_torch" android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" android:supportsRtl="true" android:localeConfig="@xml/locales_config">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -15,7 +15,7 @@
         <service android:name=".ChopService" android:exported="false" android:stopWithTask="false"
             android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="User-enabled offline accelerometer double-chop flashlight detection while screen is off; no camera stream, no audio, no permanent wake lock. Diagnostic feasibility build." />
+                android:value="User-enabled offline accelerometer double-chop flashlight detection; no camera stream, no audio, no permanent wake lock." />
         </service>
     </application>
 </manifest>

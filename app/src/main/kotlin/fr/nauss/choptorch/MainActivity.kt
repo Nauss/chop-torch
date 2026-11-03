@@ -2,180 +2,177 @@
 package fr.nauss.choptorch
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.app.*
-import android.content.*
+import android.app.Activity
+import android.app.AlertDialog
+import android.app.NotificationManager
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.*
+import android.net.Uri
+import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
-import android.view.ViewGroup
+import android.view.View
+import android.view.WindowInsets
 import android.widget.*
-import java.util.Locale
 
-/** Single native Views screen. Diagnostic copy is intentionally French-only in lot A. */
-@SuppressLint("SetTextI18n")
-class MainActivity: Activity() {
+/** One native screen. System controls retain keyboard and TalkBack behavior. */
+class MainActivity : Activity() {
     private lateinit var activation: Switch
     private lateinit var stateText: TextView
-    private lateinit var batteryText: TextView
-    private lateinit var captureText: TextView
-    private lateinit var sensitivityText: TextView
-    private lateinit var captureButton: Button
-    private lateinit var torchButton: Button
-    private var rendering=false
-    private val observer: () -> Unit = { render() }
-    private val main=Handler(Looper.getMainLooper())
-    private val refresh=object: Runnable {
-        override fun run() { render(); main.postDelayed(this,1000) }
+    private lateinit var detail: TextView
+    private lateinit var recovery: Button
+    private lateinit var help: View
+    private lateinit var helpButton: Button
+    private var rendering = false
+    private var notificationDenied = false
+    private var starting = false
+    private val observer: () -> Unit = {
+        if (LiveState.state.running || LiveState.state.error != 0) starting = false
+        render()
     }
-    private var pendingExport: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val scale=resources.displayMetrics.density
-        val pad=(20*scale).toInt()
-        val content=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(pad,pad,pad,pad) }
-        val scroll=ScrollView(this).apply { addView(content) }
-        scroll.setOnApplyWindowInsetsListener { view,insets ->
-            val bars=insets.getInsets(android.view.WindowInsets.Type.systemBars() or android.view.WindowInsets.Type.displayCutout())
-            view.setPadding(bars.left,bars.top,bars.right,bars.bottom); insets
+        setContentView(R.layout.activity_main)
+        val scroll = findViewById<ScrollView>(R.id.scroll)
+        val content = findViewById<LinearLayout>(R.id.content)
+        scroll.setOnApplyWindowInsetsListener { view, insets ->
+            val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
         }
-        setContentView(scroll)
-        fun text(value: String, size: Float=16f) = TextView(this).apply {
-            text=value; textSize=size; setPadding(0,pad/2,0,pad/2); content.addView(this)
-        }
-        fun button(label: String, action: () -> Unit) = Button(this).apply {
-            text=label; content.addView(this,ViewGroup.LayoutParams(-1,-2)); setOnClickListener { action() }
-        }
-        text("ChopTorch",28f)
-        text("APK DIAGNOSTIC PROVISOIRE · Android 17",14f)
-        text("Double chop expérimental. Veille et autonomie NON validées. Tenez fermement le téléphone : aucun lancer ni mouvement violent.")
-        activation=Switch(this).apply {
-            text="Activer la détection"; content.addView(this)
-            setOnCheckedChangeListener { _,checked ->
-                if(!rendering) {
-                    if(checked) {
-                        render()
-                        AlertDialog.Builder(this@MainActivity).setTitle("Activer le service ?")
-                            .setMessage("Accéléromètre actif en arrière-plan et notification silencieuse. Aucun micro, réseau ou flux caméra. La consommation reste à mesurer. Vous pouvez arrêter depuis cet écran ou la notification.")
-                            .setPositiveButton("Activer") { _,_ -> requestActivation() }
-                            .setNegativeButton("Annuler") { _,_ -> render() }.show()
-                    } else {
-                        getSharedPreferences("settings",0).edit().putBoolean("enabled",false).apply()
-                        stopService(Intent(this@MainActivity,ChopService::class.java))
-                    }
+        content.layoutParams.width = minOf(resources.displayMetrics.widthPixels, dp(600))
+        activation = findViewById(R.id.activation)
+        stateText = findViewById(R.id.state)
+        detail = findViewById(R.id.detail)
+        recovery = findViewById(R.id.recovery)
+        help = findViewById(R.id.help)
+        helpButton = findViewById(R.id.help_button)
+        notificationDenied = savedInstanceState?.getBoolean("notificationDenied") ?: false
+        setHelpExpanded(savedInstanceState?.getBoolean("helpExpanded") ?: false)
+        helpButton.setOnClickListener { setHelpExpanded(help.visibility != View.VISIBLE) }
+        activation.setOnCheckedChangeListener { _, checked ->
+            if (!rendering) {
+                if (checked) {
+                    render()
+                    AlertDialog.Builder(this).setTitle(R.string.activation_title)
+                        .setMessage(R.string.activation_message)
+                        .setPositiveButton(R.string.enable) { _, _ -> requestActivation() }
+                        .setNegativeButton(android.R.string.cancel, null).show()
+                } else {
+                    getSharedPreferences("settings", 0).edit().putBoolean("enabled", false).apply()
+                    stopService(Intent(this, ChopService::class.java))
                 }
             }
         }
-        stateText=text("")
-        val prefs=getSharedPreferences("settings",0)
-        sensitivityText=text("")
-        val slider=SeekBar(this).apply {
-            max=100; progress=prefs.getInt("sensitivity",50).coerceIn(0,100)
-            contentDescription="Sensibilité du double chop"
-            content.addView(this)
-            setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) {
-                    sensitivityText.text="Sensibilité expérimentale : $progress / 100"
-                    if(fromUser) {
-                        prefs.edit().putInt("sensitivity",progress).apply()
-                        if(LiveState.state.running) command(ChopService.SENSITIVITY)
+        recovery.setOnClickListener {
+            open(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
+        }
+        val prefs = getSharedPreferences("settings", 0)
+        val slider = findViewById<SeekBar>(R.id.sensitivity)
+        val value = findViewById<TextView>(R.id.sensitivity_value)
+        slider.progress = prefs.getInt("sensitivity", 50).coerceIn(0, 100)
+        fun updateValue(progress: Int) {
+            value.text = getString(R.string.sensitivity_value, progress)
+            slider.stateDescription = getString(R.string.sensitivity_value, progress)
+        }
+        updateValue(slider.progress)
+        slider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) {
+                updateValue(progress)
+                if (fromUser) {
+                    prefs.edit().putInt("sensitivity", progress).apply()
+                    if (LiveState.state.running) {
+                        try { startService(Intent(this@MainActivity, ChopService::class.java).setAction(ChopService.SENSITIVITY)) }
+                        catch (_: RuntimeException) { LiveState.update { it.copy(error = R.string.error_command) } }
                     }
                 }
-                override fun onStartTrackingTouch(bar: SeekBar) = Unit
-                override fun onStopTrackingTouch(bar: SeekBar) = Unit
-            })
+            }
+            override fun onStartTrackingTouch(bar: SeekBar) = Unit
+            override fun onStopTrackingTouch(bar: SeekBar) = Unit
+        })
+        val version = packageManager.getPackageInfo(packageName, 0).versionName.orEmpty()
+        findViewById<TextView>(R.id.version).text = getString(R.string.version_license, version)
+        findViewById<Button>(R.id.source).setOnClickListener {
+            open(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Nauss/chop-torch")))
         }
-        sensitivityText.text="Sensibilité expérimentale : ${slider.progress} / 100"
-        batteryText=text("")
-        button("Réglages d’optimisation batterie") {
-            AlertDialog.Builder(this).setTitle("Exemption facultative")
-                .setMessage("Dans les réglages Android, choisissez ChopTorch diagnostic si vous souhaitez l’exempter. Cela ne prouve ni la réception en veille ni une faible consommation. Ne changez pas l’économie globale.")
-                .setPositiveButton("Ouvrir les réglages") { _,_ ->
-                    try { startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
-                    catch(e: ActivityNotFoundException) { toast("Réglage indisponible") }
-                }.setNegativeButton("Annuler",null).show()
+        findViewById<Button>(R.id.battery_settings).setOnClickListener {
+            open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
         }
-        text("Diagnostic provisoire",22f)
-        torchButton=button("Tester la torche (commuter)") { command(ChopService.TEST_TORCH) }
-        captureText=text("")
-        captureButton=button("Capturer (max. 15 s / 1000 mesures)") {
-            AlertDialog.Builder(this).setTitle("Capture volontaire")
-                .setMessage("Remplace la capture précédente. Arrêt à la première limite : 15 secondes OU 1000 mesures (environ 8 secondes sur le Pixel observé). Seulement en mémoire. Faites deux doubles chops confortables, sans forcer, espacés de quelques secondes ; arrêtez si inconfortable. Export uniquement à votre demande. Les traces peuvent révéler vos mouvements ; vérifiez le fichier avant partage.")
-                .setPositiveButton("Démarrer") { _,_ -> command(ChopService.CAPTURE) }
-                .setNegativeButton("Annuler",null).show()
-        }
-        button("Exporter inventaire et diagnostic JSON") {
-            pendingExport=Diagnostics.export(this)
-            try {
-                startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE); type="application/json"
-                    putExtra(Intent.EXTRA_TITLE,"choptorch-diagnostic.json")
-                },EXPORT)
-            } catch(e: ActivityNotFoundException) { pendingExport=null; toast("Sélecteur de document indisponible") }
-        }
-        button("Effacer les diagnostics en mémoire") { Diagnostics.clear(); render() }
-        text("Wake-up préféré si disponible ; sans lui, réception fiable écran éteint non assurée. Même avec wake-up, essai Pixel nécessaire. Aucune mesure de batterie déduite de la puissance déclarée des capteurs.")
-        text("Lot A : arrêt système, redémarrage, mise à jour ou mort du processus ⇒ réactivation manuelle. Sensibilité conservée ; aucune relance cachée. Aucune signature de production ni publication F-Droid à ce stade.",14f)
     }
-    private fun command(action: String) {
-        if(!LiveState.state.running) { toast("Activez d’abord le service"); return }
-        try { startService(Intent(this,ChopService::class.java).setAction(action)) }
-        catch(e: RuntimeException) { toast("Commande refusée par Android") }
+
+    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
+    private fun setHelpExpanded(expanded: Boolean) {
+        help.visibility = if (expanded) View.VISIBLE else View.GONE
+        helpButton.setText(if (expanded) R.string.help_close else R.string.help_open)
+        helpButton.stateDescription = getString(if (expanded) R.string.expanded else R.string.collapsed)
+    }
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean("helpExpanded", help.visibility == View.VISIBLE)
+        outState.putBoolean("notificationDenied", notificationDenied)
+        super.onSaveInstanceState(outState)
     }
     private fun requestActivation() {
-        if(checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS),NOTIFICATION)
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), NOTIFICATION)
         } else startDetection()
     }
     private fun startDetection() {
-        if(!getSystemService(NotificationManager::class.java).areNotificationsEnabled()) {
-            toast("Autorisez les notifications pour rendre ce service visible"); render(); return
-        }
-        try { startForegroundService(Intent(this,ChopService::class.java)) }
-        catch(e: RuntimeException) {
-            LiveState.update { it.copy(running=false,message="Démarrage refusé : ${e.javaClass.simpleName}") }
+        if (!notificationsAllowed()) { notificationDenied = true; render(); return }
+        notificationDenied = false
+        // A repeated failure must still produce a fresh observed transition.
+        LiveState.update { it.copy(error = 0) }
+        starting = true
+        render()
+        try { startForegroundService(Intent(this, ChopService::class.java)) }
+        catch (_: RuntimeException) {
+            starting = false
+            LiveState.update { it.copy(running = false, error = R.string.error_start) }
+            render()
         }
     }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode,permissions,grantResults)
-        if(requestCode==NOTIFICATION && grantResults.firstOrNull()==PackageManager.PERMISSION_GRANTED) startDetection()
-        else { toast("Activation annulée : notification non autorisée"); render() }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != NOTIFICATION) return
+        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) startDetection()
+        else { notificationDenied = true; render() }
     }
-    @Deprecated("Native Activity document picker callback")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode,resultCode,data)
-        if(requestCode!=EXPORT) return
-        val payload=pendingExport; pendingExport=null
-        if(resultCode!=RESULT_OK) return
-        if(payload==null) { toast("Export annulé après recréation de l’écran — recommencez"); return }
-        val uri=data?.data ?: return
-        Thread {
-            try {
-                val stream=contentResolver.openOutputStream(uri,"wt") ?: error("Document non accessible")
-                stream.bufferedWriter(Charsets.UTF_8).use { it.write(payload) }
-                runOnUiThread { toast("Diagnostic exporté") }
-            } catch(e: Exception) { runOnUiThread { toast("Échec de l’export (accès ou espace indisponible)") } }
-        }.start()
-    }
+    private fun notificationsAllowed() = getSystemService(NotificationManager::class.java).areNotificationsEnabled()
     override fun onResume() {
         super.onResume()
-        if(LiveState.state.running && !getSystemService(NotificationManager::class.java).areNotificationsEnabled()) {
-            stopService(Intent(this,ChopService::class.java))
-            toast("Notifications désactivées : arrêt du diagnostic à la réouverture")
+        if (notificationsAllowed()) notificationDenied = false
+        else if (LiveState.state.running) {
+            notificationDenied = true
+            stopService(Intent(this, ChopService::class.java))
         }
-        LiveState.observe(observer); main.post(refresh)
+        LiveState.observe(observer)
+        val exempt = getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
+        findViewById<TextView>(R.id.battery_info).setText(if (exempt) R.string.battery_exempt else R.string.battery_default)
     }
-    override fun onPause() { main.removeCallbacks(refresh); LiveState.remove(observer); super.onPause() }
+    override fun onPause() { LiveState.remove(observer); super.onPause() }
     private fun render() {
-        if(!::activation.isInitialized) return
-        val s=LiveState.state
-        rendering=true; activation.isChecked=s.running; rendering=false
-        val age=if(s.lastEventNs==0L) "aucune" else String.format(Locale.FRANCE,"%.1f s",(SystemClock.elapsedRealtimeNanos()-s.lastEventNs)/1e9)
-        stateText.text="Service : ${s.message}\nTorche : ${s.torch}\nCapteur : ${s.sensor}\nWake-up : ${s.wakeUp} (veille non validée)\nMesures : ${s.samples}, dernière : $age\nDernier intervalle : ${String.format(Locale.FRANCE,"%.1f",s.periodMs)} ms\nGestes expérimentaux : ${s.gestures}"
-        batteryText.text="Exemption optimisation batterie : " + if(getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)) "accordée (observée)" else "non accordée"
-        captureText.text=Diagnostics.status()
-        captureButton.isEnabled=s.running; torchButton.isEnabled=s.running
+        val state = LiveState.state
+        rendering = true
+        activation.isChecked = state.running
+        activation.isEnabled = !starting
+        rendering = false
+        stateText.setText(when {
+            starting -> R.string.state_starting
+            state.running -> R.string.state_active
+            else -> R.string.state_off
+        })
+        detail.setText(when {
+            notificationDenied -> R.string.error_notifications
+            state.error != 0 -> state.error
+            state.running -> state.torch
+            else -> R.string.state_off_hint
+        })
+        recovery.visibility = if (notificationDenied) View.VISIBLE else View.GONE
     }
-    private fun toast(text: String) { Toast.makeText(this,text,Toast.LENGTH_LONG).show() }
-    companion object { private const val NOTIFICATION=1; private const val EXPORT=2 }
+    private fun open(intent: Intent) {
+        try { startActivity(intent) }
+        catch (_: ActivityNotFoundException) { Toast.makeText(this, R.string.settings_unavailable, Toast.LENGTH_LONG).show() }
+    }
+    companion object { private const val NOTIFICATION = 1 }
 }

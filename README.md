@@ -1,20 +1,28 @@
-# ChopTorch — diagnostic natif Android 17
+# ChopTorch — torche par double chop
 
-**Premier APK de faisabilité, pas une application finale validée.** Kotlin + Android Views, minSdk / targetSdk / compileSdk **37**. Détection expérimentale de deux mouvements de hachage consécutifs pour commuter la torche. Aucun lien avec Motorola, aucune reprise d’algorithme propriétaire.
+Application native Kotlin + Android Views pour Android 17 (API **37**). Deux mouvements de hachage consécutifs allument ou éteignent la torche. Aucun lien avec Motorola, aucune reprise d’algorithme propriétaire.
 
-## Diagnostic 0.4 — candidat lot B3
+## État au 4 novembre 2026 — finition P1
+
+Le propriétaire a installé et essayé la **0.4**, puis accepté le geste : « C’est plutôt bien ! […] on est bon ». Cette acceptation ne mesure ni la réception en veille profonde, ni l’autonomie, ni l’endurance. Le moteur validé reste inchangé dans ce lot.
+
+La **0.5-ui-preview / code 5** apporte un seul écran natif FR/EN, les thèmes clair et graphite suivant le système, un interrupteur de détection, l’état observé du service et de la torche, le curseur 0–100 et une aide progressive. Capture, export, inventaire, journal, compteurs et commande de test torche sont **retirés de l’APK**, pas seulement masqués. Les tests et outils de replay restent hors APK. Voir [DESIGN.md](DESIGN.md) et [rapport de finition](docs/FINISH_P1.md).
+
+Prévisualisation uniquement : identifiant `fr.nauss.choptorch.diagnostic` conservé, signature de développement ; **pas la version publique finale**. Pas de release GitHub ni de publication F-Droid dans P1. La reprise du service et la préparation du paquet public relèvent de P2 ; la signature pérenne et la publication relèvent de P3, après revue indépendante et intégration.
+
+## Historique diagnostic 0.4 — lot B3, avant le retour utilisateur
 
 Le rythme normal fonctionne mieux sur0.3 mais l'utilisateur rapporte des échecs
 rapides après répétitions. Une nouvelle capture d'un seul essai rapide non déclenché
 a permis d'isoler une direction faussée au départ du coup :0.4 conserve la direction
 initiale et ajoute un témoin directionnel soutenu, sans changer les gardes temporelles,
 l'amplitude ou le cooldown. Le cas réel est récupéré **hors ligne**, avec références
-normale et rapide préservées au même réglage. **Pas encore de validation physique
-ni d'installation de0.4.** Revue indépendante obligatoire avant remise.
+normale et rapide préservées au même réglage. À la rédaction de ce rapport historique,
+l’installation et la validation physique de 0.4 n’avaient pas encore eu lieu ; elles ont depuis été suivies du retour positif ci-dessus.
 Voir [rapport B3](docs/VALIDATION_LOT_B3.md) et [protocole B3](docs/TEST_B3.md).
 Veille, énergie, reprise et F-Droid restent séparés.
 
-## Historique diagnostic 0.3 — lot B2
+## Historique diagnostic 0.3 — lot B2, avant la finition du 4 novembre 2026
 
 Le test physique0.2 était **négatif à sensibilité100**. La0.3 corrige une régression
 du curseur démontrée, sépare segmentation fixe et preuve d'amplitude réglable et
@@ -24,7 +32,7 @@ l'APK0.3**. Voir [rapport B2](docs/VALIDATION_LOT_B2.md) et
 [protocole confortable B2](docs/TEST_B2.md), qui prévaut sur le protocole historique.
 Ne pas secouer plus fort. Veille, batterie, reprise et F-Droid restent non validés.
 
-## Historique diagnostic 0.2 — lot B1
+## Historique diagnostic 0.2 — lot B1, avant la finition du 4 novembre 2026
 
 Le premier essai réel sur **Pixel 9a** a confirmé le bouton torche dans les deux sens,
 mais aucune reconnaissance. Le candidat 0.2 corrige les transitions continues et le retour
@@ -33,7 +41,7 @@ entre coups ; tests synthétiques, replay privé non annoté et limites sont dé
 ni une validation physique du nouvel APK. La veille, l'autonomie et les faux positifs
 quotidiens restent non validés. Le capteur réel est non-wake-up.
 
-## État logiciel historique du lot A
+## État logiciel historique du lot A — avant la finition du 4 novembre 2026
 
 - Détecteur JVM, tests **synthétiques**, build APK et lint exécutés ; voir [rapport logiciel](docs/VALIDATION_LOT_A.md).
 - Service foreground `specialUse` activé volontairement ; accéléromètre wake-up préféré, à défaut variante non-wake-up signalée. Cadence demandée : 50 Hz, livraison immédiate, sans wake lock.
@@ -49,7 +57,7 @@ L’identifiant diagnostic `fr.nauss.choptorch.diagnostic` est distinct du futur
 Prérequis : JDK 21, Android SDK Platform **37.0** (révision 2 utilisée), Build Tools **37.0.0** ; `ANDROID_HOME` vers votre SDK. Accepter vous-même les licences SDK si nécessaire. Versions épinglées : **AGP 9.3.3**, **Gradle 9.5.0**, Kotlin intégré à AGP **2.2.10**, JUnit **4.13.2**. Aucune version dynamique. Les dépendances téléchargées au build ne donnent pas d’accès réseau à l’application.
 
 ```sh
-./gradlew --console=plain clean :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+./gradlew --console=plain clean :app:testDebugUnitTest :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease
 # Windows sans bash : gradlew.bat avec les mêmes arguments
 ```
 
@@ -69,11 +77,11 @@ traces personnelles et `.ops/` sont exclus de Git.
 
 ## Essai et limites
 
-Suivre [le protocole B3 en français](docs/TEST_B3.md) après revue/remise du candidat0.4. Activation uniquement depuis l’écran visible et consentement explicite. La seule permission d’exécution demandée est la **notification**, requise par ce diagnostic pour rendre le service visible. Aucune permission `CAMERA` n’est déclarée : l’API torche et le chemin AOSP consulté ne la requièrent pas pour une caméra publique normale ; un refus propre au système reste intercepté et affiché, pas contourné. Voir [décisions et sources officielles](docs/DECISIONS.md).
+Le geste 0.4 est accepté ; aucune nouvelle capture n’est demandée pour P1. Les [protocoles B3](docs/TEST_B3.md) sont historiques, pas un parcours de l’interface actuelle. Activation depuis l’écran visible avec consentement explicite. La seule permission d’exécution demandée est la **notification**, nécessaire pour garder le service visible. Aucune permission `CAMERA` n’est déclarée : le contrôleur utilise seulement les API torche, sans flux caméra. Un refus système reste affiché, pas contourné. Voir [décisions et sources officielles](docs/DECISIONS.md).
 
-Le réglage d’optimisation batterie est ouvert volontairement ; son état réel est affiché et exporté. Aucune exemption n’est imposée ni économie globale désactivée.
+L’aide affiche l’état observé de l’exemption batterie et ouvre volontairement la fiche de cette application. Aucune exemption n’est imposée, aucune économie globale désactivée, aucun export proposé.
 
-**Lot A : réactivation manuelle** après arrêt Android, force-stop, mort du processus, redémarrage ou mise à jour ; pas de receiver boot ni de reprise automatique. Retirer l’activité des récents ne demande pas l’arrêt du service (`stopWithTask=false`), sans garantie physique encore. La préférence de sensibilité et la dernière activation sont enregistrées ; l’état « actif » n’est jamais déduit de cette préférence. La désactivation et le bouton Arrêter de la notification libèrent le capteur et demandent l’extinction de la torche si ChopTorch l’a allumée. La confirmation finale d’extinction après arrêt n’est pas garantie si la ressource est retirée ; Android arrête aussi la torche à la mort du client.
+**P1 conserve la réactivation manuelle** après arrêt Android, force-stop, mort du processus, redémarrage ou mise à jour ; pas encore de receiver boot ni de reprise automatique. Retirer l’activité des récents ne demande pas l’arrêt du service (`stopWithTask=false`), sans garantie de veille. La préférence de sensibilité et la dernière activation sont enregistrées ; l’état « actif » n’est jamais déduit de cette préférence. La désactivation et le bouton Arrêter de la notification libèrent le capteur et demandent l’extinction de la torche si ChopTorch l’a allumée. La confirmation finale d’extinction après arrêt n’est pas garantie si la ressource est retirée ; Android arrête aussi la torche à la mort du client.
 
 Le détecteur utilise un filtre gravité unique, trois échelles de segmentation fixes,
 une chauffe500 ms, deux coups accélération/freinage soutenus au moins40 ms chacun,
@@ -83,16 +91,16 @@ une direction cohérente d'armement ou de soutien intégré (sans croiser les t�
 une fenêtre départ-à-départ150–600 ms, une remise à zéro sur trou
 >120 ms / timestamp non croissant et un cooldown 900 ms. Les événements vieux de plus de
 250 ms ne commandent pas la torche (évite une commutation tardive après livraison FIFO au
-réveil). Seuils et fenêtres **expérimentaux**, à ajuster sur traces réelles séparées de la
-validation. Les tests ne mesurent pas les faux positifs dans le monde réel.
+réveil). Ce moteur accepté par le propriétaire est gelé pour la finition ; aucune
+modification de seuil n’appartient à P1. Les tests ne mesurent pas les faux positifs dans le monde réel.
 
 ## Confidentialité
 
-Pas de stockage brut permanent ni accès au stockage partagé. Une seule capture volontaire en mémoire, remplacée à la suivante et perdue à la mort du processus ; journal local circulaire de 64 événements au maximum. Effacement disponible. L’export contient noms/fournisseurs/caractéristiques déclarées des capteurs, données de mouvement capturées, délais, état service/torche et exemption batterie. Vérifiez-le avant partage : il peut révéler des mouvements. L’application n’exporte rien automatiquement. Le fournisseur de documents choisi par l’utilisateur peut être distant ; ce n’est pas un accès réseau de ChopTorch.
+Les événements sont traités en mémoire par le détecteur, jamais enregistrés ni exportés. Aucun tampon de capture, inventaire matériel exportable, journal diagnostic ou accès au stockage partagé n’est inclus. Seules la sensibilité et l’intention d’activation sont conservées localement. Aucun réseau, analytics, publicité, compte ou service distant. Le lien du code source ouvre un navigateur externe uniquement sur action de l’utilisateur ; ChopTorch ne déclare pas `INTERNET`. Les anciennes captures privées restent locales, ignorées par Git, immuables et utilisées uniquement par les outils développeur hors APK.
 
 ## Suite du produit (non livrée dans ce lot)
 
-Calibration des deux mains et contre-exemples ; premier geste après veille profonde ; étude alternative basse consommation (significant-motion puis fenêtre précise, sans supposer le premier chop reçu) ; persistance/reboot/mise à jour et révocations ; comparaison énergie sur 24 h et endurance 72 h ; finition sans diagnostics ; signature pérenne, canal F-Droid personnel testé puis candidature officielle distincte. Ni la très faible consommation, ni le fonctionnement permanent, ni l’acceptation F-Droid ne sont promis par ce build.
+Reprise lifecycle et paquet public (P2), puis signature pérenne, GitHub release, canal F-Droid personnel et candidature officielle distincte (P3). Premier geste après veille profonde, comparaison énergie sur 24 h et endurance 72 h restent à mesurer. Le capteur Pixel observé est non-wake-up : la réception fiable en suspension n’est pas assurée. Ni la très faible consommation, ni le fonctionnement permanent, ni l’acceptation F-Droid ne sont promis par ce build.
 
 ## Licence
 
@@ -100,4 +108,4 @@ Copyright (C) 2026 Nauss et contributeurs. **GPL-3.0-or-later** : redistribution
 
 ## English summary
 
-Native Kotlin / Android Views diagnostic for Android 17 (API 37 only). Explicitly enabled foreground accelerometer service, experimental double-chop detector, callback-observed flashlight, bounded opt-in capture and Storage Access Framework JSON export. No network, audio, ads, analytics or Play Services. Debug-only diagnostic application ID and development signature. JVM tests, lint and APK build are software checks, **not device, screen-off, battery or 72-hour validation**. Manual restart is required after process death, reboot, update or system stop in this first version. Build command and pinned tool versions are listed above. GPL-3.0-or-later; not affiliated with Motorola. F-Droid publication remains future work.
+Native Kotlin / Android Views flashlight for Android 17 (API 37 only). The owner accepted the 0.4 gesture; the detector is unchanged. P1 adds a restrained FR/EN screen, system-following light/dark themes, observed service/flashlight states, sensitivity and progressive help. All capture/export/test-torch commands and raw diagnostic logging are removed from the APK. No network, audio, ads, analytics or Play Services. Version 0.5-ui-preview still uses the diagnostic application ID and development signature, not the final public package. Manual restart remains required after process death, reboot, update or system stop until P2. Screen-off reliability, energy and 72-hour endurance remain unmeasured. GitHub release and F-Droid publication are reserved for P3 after review. GPL-3.0-or-later; not affiliated with Motorola.

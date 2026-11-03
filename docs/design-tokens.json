@@ -1,0 +1,162 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
+  "$description": "Utilitaire Android natif discret, lisible, graphite et lumière chaude.",
+  "color": {
+    "$type": "color",
+    "primary": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.4,
+          0.322,
+          0.098
+        ],
+        "hex": "#665219"
+      }
+    },
+    "surface": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.98,
+          0.976,
+          0.965
+        ],
+        "hex": "#faf9f6"
+      }
+    },
+    "surface-container": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.933,
+          0.929,
+          0.91
+        ],
+        "hex": "#eeede8"
+      }
+    },
+    "on-surface": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.125,
+          0.129,
+          0.122
+        ],
+        "hex": "#20211f"
+      }
+    },
+    "on-surface-variant": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.345,
+          0.357,
+          0.329
+        ],
+        "hex": "#585b54"
+      }
+    },
+    "control-normal": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.451,
+          0.463,
+          0.427
+        ],
+        "hex": "#73766d"
+      }
+    },
+    "dark-primary": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.898,
+          0.792,
+          0.482
+        ],
+        "hex": "#e5ca7b"
+      }
+    },
+    "dark-surface": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.09,
+          0.098,
+          0.094
+        ],
+        "hex": "#171918"
+      }
+    },
+    "dark-surface-container": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.141,
+          0.153,
+          0.141
+        ],
+        "hex": "#242724"
+      }
+    },
+    "dark-on-surface": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.941,
+          0.945,
+          0.922
+        ],
+        "hex": "#f0f1eb"
+      }
+    },
+    "dark-on-surface-variant": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.749,
+          0.765,
+          0.725
+        ],
+        "hex": "#bfc3b9"
+      }
+    },
+    "dark-control-normal": {
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.635,
+          0.655,
+          0.608
+        ],
+        "hex": "#a2a79b"
+      }
+    }
+  },
+  "typography": {
+    "headline": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "sans-serif",
+        "fontWeight": 500
+      }
+    },
+    "title": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "sans-serif",
+        "fontWeight": 500
+      }
+    },
+    "body": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "sans-serif",
+        "fontWeight": 400
+      }
+    }
+  }
+}

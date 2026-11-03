@@ -17,24 +17,22 @@ class TorchController(context: Context, private val handler: Handler) {
     private var registered = false
     private val timeout=Runnable {
         pending=false
-        report("Commande sans confirmation — réessayer manuellement")
+        report(R.string.torch_unconfirmed)
     }
     private val callback=object: CameraManager.TorchCallback() {
         override fun onTorchModeChanged(cameraId: String, enabled: Boolean) {
             if(!registered || cameraId!=id) return
             observed=enabled; pending=false; handler.removeCallbacks(timeout)
             if(!enabled) owned=false
-            report(if(enabled) "Allumée (callback)" else "Éteinte (callback)")
+            report(if(enabled) R.string.torch_on else R.string.torch_off)
         }
         override fun onTorchModeUnavailable(cameraId: String) {
             if(!registered || cameraId!=id) return
             observed=null; pending=false; owned=false; handler.removeCallbacks(timeout)
-            report("Indisponible : caméra occupée ou ressource retirée")
+            report(R.string.torch_unavailable)
         }
     }
-    private fun report(text: String) {
-        LiveState.update { it.copy(torch=text) }; Diagnostics.event("Torche : $text")
-    }
+    private fun report(message: Int) { LiveState.update { it.copy(torch=message) } }
     fun open() {
         try {
             val cameras=manager.cameraIdList.toList()
@@ -43,36 +41,37 @@ class TorchController(context: Context, private val handler: Handler) {
                 c.get(CameraCharacteristics.FLASH_INFO_AVAILABLE)==true &&
                     c.get(CameraCharacteristics.LENS_FACING)==CameraCharacteristics.LENS_FACING_BACK
             } ?: cameras.firstOrNull { manager.getCameraCharacteristics(it).get(CameraCharacteristics.FLASH_INFO_AVAILABLE)==true }
-            if(id==null) { report("Aucune caméra avec flash"); return }
+            if(id==null) { report(R.string.torch_missing); return }
             manager.registerTorchCallback(callback,handler); registered=true
-        } catch(e: CameraAccessException) { report("Accès caméra indisponible (${e.reason})") }
-          catch(e: SecurityException) { report("Accès refusé par le système — aucune permission superflue demandée") }
-          catch(e: IllegalArgumentException) { report("Caméra retirée") }
+        } catch(_: CameraAccessException) { report(R.string.torch_unavailable) }
+          catch(_: SecurityException) { report(R.string.torch_denied) }
+          catch(_: IllegalArgumentException) { report(R.string.torch_missing) }
     }
     fun toggle() {
         val camera=id ?: return
         val current=observed
-        if(current==null || pending) { Diagnostics.event("Commande ignorée : état torche inconnu/indisponible ou attente callback"); return }
+        if(current==null || pending) return
         try {
             pending=true
             manager.setTorchMode(camera,!current)
             owned=!current
             handler.postDelayed(timeout,2000)
             // Do not change observed state until TorchCallback.
-        } catch(e: CameraAccessException) { pending=false; report("Commande refusée : ressource occupée/indisponible (${e.reason})") }
-          catch(e: SecurityException) { pending=false; observed=null; report("Accès refusé/révoqué") }
-          catch(e: IllegalArgumentException) { pending=false; observed=null; report("Caméra/flash absent") }
+        } catch(_: CameraAccessException) { pending=false; report(R.string.torch_unavailable) }
+          catch(_: SecurityException) { pending=false; observed=null; report(R.string.torch_denied) }
+          catch(_: IllegalArgumentException) { pending=false; observed=null; report(R.string.torch_missing) }
     }
     fun close() {
         handler.removeCallbacks(timeout)
+        var result=R.string.torch_unknown
         if(owned) {
             try { id?.let { manager.setTorchMode(it,false) } }
-            catch(e: CameraAccessException) { Diagnostics.event("Extinction arrêt non confirmée (${e.reason})") }
-            catch(e: SecurityException) { Diagnostics.event("Extinction arrêt refusée") }
-            catch(e: IllegalArgumentException) { Diagnostics.event("Flash retiré à l’arrêt") }
+            catch(_: CameraAccessException) { result=R.string.torch_unconfirmed }
+            catch(_: SecurityException) { result=R.string.torch_denied }
+            catch(_: IllegalArgumentException) { result=R.string.torch_missing }
         }
         if(registered) manager.unregisterTorchCallback(callback)
         registered=false; observed=null; pending=false; owned=false
-        LiveState.update { it.copy(torch="Non suivi : service arrêté (extinction demandée si allumée par ChopTorch)") }
+        report(result)
     }
 }
