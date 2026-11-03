@@ -75,9 +75,12 @@ def main():
     shell('cmd','locale','set-app-locales',PKG,'--locales','en-US')
     shell('cmd','uimode','night','no')
     shell('settings','put','system','font_scale','1.0')
+    # Cold start after changing the prior run's per-app locale; do not inspect
+    # an activity created with the previous configuration during replacement.
+    shell('am','force-stop',PKG)
     launch()
-    capture('01-light-en-off')
     assert_text('Detection off')
+    capture('01-light-en-off')
     click('activation'); click('CANCEL')
     assert_text('Detection off')
     click('activation'); click('Enable')
