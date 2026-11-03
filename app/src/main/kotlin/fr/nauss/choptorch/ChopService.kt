@@ -55,7 +55,7 @@ class ChopService: Service(), SensorEventListener {
             when(intent?.action) {
                 CAPTURE -> if(registered) {
                     Diagnostics.begin(); handler.removeCallbacks(finishCapture); handler.postDelayed(finishCapture,15_000)
-                    publishMessage("Capture volontaire 15 s en cours")
+                    publishMessage("Capture volontaire : max. 15 s / 1000 mesures")
                 }
                 TEST_TORCH -> if(registered) torch.toggle()
                 SENSITIVITY -> detector=ChopDetector(getSharedPreferences("settings",0).getInt("sensitivity",50))

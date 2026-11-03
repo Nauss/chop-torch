@@ -1,50 +1,105 @@
 import fr.nauss.choptorch.ChopDetector;
+import fr.nauss.choptorch.SampleFreshness;
 import java.nio.file.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-/** Local, explicitly supplied CSV: relative_ms,x,y,z (no header).
- * Uses the compiled production Kotlin detector. Never a translated algorithm.
- * Input/output may be personal: keep outside Git. No callback freshness inferred.
+/** PRIVATE replay of the actual compiled engine. No translated recognizer.
+ * Reflection only supports transition diagnostics on the historical 0.2 engine.
+ * These legacy causes are inferred from its exact guards; new engines emit events.
  */
 class ReplayCapture {
     static Object field(ChopDetector d, String name) throws Exception {
-        Field f = ChopDetector.class.getDeclaredField(name);
-        f.setAccessible(true);
-        return f.get(d);
+        Field f = ChopDetector.class.getDeclaredField(name); f.setAccessible(true); return f.get(d);
+    }
+    static void inc(Map<String,Integer> counts, String name) { counts.merge(name, 1, Integer::sum); }
+    static ChopDetector detector(int sensitivity, Map<String,Integer> counts, double[] clock, boolean detail) throws Exception {
+        try {
+            Class<?> observer = Class.forName("fr.nauss.choptorch.ChopDetector$Observer");
+            Object sink = Proxy.newProxyInstance(observer.getClassLoader(), new Class<?>[]{observer}, (proxy, method, args) -> {
+                if (method.getName().equals("onEvent")) {
+                    inc(counts, args[0].toString());
+                    if (detail) System.out.printf(Locale.ROOT,"s=%d t=%.6f event=%s%n", sensitivity, clock[0], args[0]);
+                }
+                return null;
+            });
+            return (ChopDetector)ChopDetector.class.getConstructor(int.class, observer).newInstance(sensitivity, sink);
+        } catch (ClassNotFoundException historical) { return new ChopDetector(sensitivity); }
     }
     public static void main(String[] args) throws Exception {
-        if (args.length < 1 || args.length > 2) throw new IllegalArgumentException("CSV path required; optional --detail");
-        boolean detail = args.length == 2 && args[1].equals("--detail");
+        if (args.length < 2 || args.length > 3) throw new IllegalArgumentException("CSV, mode, optional --detail required");
+        String mode = args[1]; boolean detail = args.length == 3 && args[2].equals("--detail");
+        if (!Set.of("detector-only", "recorded-freshness", "recomputed-freshness").contains(mode)) throw new IllegalArgumentException("Unknown admission mode");
+        boolean legacy;
+        try { Class.forName("fr.nauss.choptorch.ChopDetector$Observer"); legacy = false; }
+        catch (ClassNotFoundException historical) { legacy = true; }
         List<String> rows = Files.readAllLines(Path.of(args[0]));
         for (int sensitivity : new int[]{0, 50, 100}) {
-            ChopDetector d = new ChopDetector(sensitivity);
+            Map<String,Integer> counts = new TreeMap<>();
+            double[] clock = {0};
+            ChopDetector d = detector(sensitivity, counts, clock, detail);
             List<Double> hits = new ArrayList<>();
-            Map<String,Integer> transitions = new TreeMap<>();
+            int mismatches = 0, admissionRejected = 0;
             for (String row : rows) {
                 String[] c = row.split(",");
-                if(c.length != 4) throw new IllegalArgumentException("Expected four columns");
+                if (c.length != 4 && c.length != 7) throw new IllegalArgumentException("Expected four or seven columns");
                 double ms = Double.parseDouble(c[0]);
+                clock[0] = ms;
                 long ns = 1_000_000_000L + Math.round(ms * 1e6);
                 double[] raw = {Double.parseDouble(c[1]), Double.parseDouble(c[2]), Double.parseDouble(c[3])};
-                int before = (int)field(d,"phase");
-                long phaseAt = (long)field(d,"phaseAt");
-                double[] dir = ((double[])field(d,"direction")).clone();
-                boolean hit = d.sample(ns,raw[0],raw[1],raw[2]);
-                int after = (int)field(d,"phase");
-                if (hit) hits.add(ms);
-                if(before != after || hit) {
-                    transitions.merge(before+"->"+after,1,Integer::sum);
-                    if(detail) {
-                        double[] g = (double[])field(d,"gravity");
-                        double dot=0, mag=0;
-                        for(int i=0;i<3;i++) { double v=raw[i]-g[i]; dot+=v*dir[i]; mag+=v*v; }
-                        System.out.printf(Locale.ROOT,"s=%d t=%.3f phase=%d->%d elapsed=%.1f mag=%.2f dot=%.2f firstAt=%.1f hit=%s%n",sensitivity,ms,before,after,(ns-phaseAt)/1e6,Math.sqrt(mag),dot,((long)field(d,"firstAt")-1_000_000_000L)/1e6,hit);
+                if (!mode.equals("detector-only")) {
+                    if (c.length != 7) throw new IllegalArgumentException("V1 lacks receipt/admission data");
+                    long received = 1_000_000_000L + Math.round(Double.parseDouble(c[4]) * 1e6);
+                    boolean recorded = Boolean.parseBoolean(c[5]);
+                    boolean computed = SampleFreshness.INSTANCE.accepts(ns, received);
+                    if (recorded != computed) mismatches++;
+                    if (!(mode.equals("recorded-freshness") ? recorded : computed)) {
+                        d.cancel(); admissionRejected++; continue;
                     }
                 }
+                int before = legacy ? (int)field(d,"phase") : 0;
+                long at = legacy ? (long)field(d,"phaseAt") : 0, began = legacy ? (long)field(d,"began") : 0, firstAt = legacy ? (long)field(d,"firstAt") : 0;
+                long support = legacy ? (long)field(d,"supportNs") : 0, last = legacy ? (long)field(d,"last") : 0;
+                double[] dir = legacy ? ((double[])field(d,"direction")).clone() : null;
+                double[] previous = legacy ? (double[])field(d,"firstDirection") : null;
+                boolean hit = d.sample(ns,raw[0],raw[1],raw[2]);
+                int after = legacy ? (int)field(d,"phase") : 0;
+                if (hit) hits.add(ms);
+                if (legacy) {
+                    // Only classify 0.2; never interpret candidate guards as legacy.
+                    boolean invalid = ns <= 0 || Arrays.stream(raw).anyMatch(v -> !Double.isFinite(v) || Math.abs(v)>160);
+                    boolean discontinuity = !invalid && (last==0 || ns<=last || ns-last>120_000_000L);
+                    double[] g=(double[])field(d,"gravity"); double dot=0;
+                    for(int i=0;i<3;i++) dot+=(raw[i]-g[i])*dir[i];
+                    double threshold=18.0-sensitivity*0.10;
+                    long elapsed=ns-at;
+                    if(invalid) inc(counts,"INVALID_SAMPLE");
+                    else if(discontinuity) inc(counts,"DISCONTINUITY");
+                    else if((ns >= (long)field(d,"warmUntil") && ns >= (long)field(d,"cooldownUntil")) || hit) {
+                        if(before==0 && previous!=null && ns-firstAt>650_000_000L) inc(counts,"FIRST_EXPIRED");
+                        if(before==1 && after==0) {
+                            if(elapsed>160_000_000L) inc(counts,"ACCELERATION_TIMEOUT");
+                            else if(elapsed<40_000_000L) inc(counts,"REVERSAL_TOO_EARLY");
+                            else inc(counts,"ACCELERATION_SUPPORT_SHORT");
+                        }
+                        if(before==2 && after!=2) {
+                            if(elapsed>180_000_000L) inc(counts,"BRAKING_TIMEOUT");
+                            else if(support<40_000_000L) inc(counts,"BRAKING_SUPPORT_SHORT");
+                            else if(hit) inc(counts,"RECOGNIZED");
+                            else if(previous==null) inc(counts,"FIRST_STROKE");
+                            else {
+                                double alignment=0;for(int i=0;i<3;i++)alignment+=previous[i]*dir[i];
+                                if(alignment<0.80)inc(counts,"PAIR_DIRECTION");
+                                if(began-firstAt<150_000_000L||began-firstAt>600_000_000L)inc(counts,"PAIR_INTERVAL");
+                            }
+                        }
+                    }
+                }
+                if (detail && legacy && (before!=after || hit))
+                    System.out.printf(Locale.ROOT,"s=%d t=%.6f phase=%d->%d elapsed=%.3f support_before=%.3f hit=%s%n",sensitivity,ms,before,after,(ns-at)/1e6,support/1e6,hit);
             }
-            System.out.println("sensitivity="+sensitivity+" samples="+rows.size()+" recognized="+hits.size()+" hit_relative_ms="+hits+" transitions="+transitions);
+            System.out.println("sensitivity="+sensitivity+" samples="+rows.size()+" recognized="+hits.size()+" hit_relative_ms="+hits+" admissionRejected="+admissionRejected+" freshnessDisagreements="+mismatches+" causes="+counts);
         }
-        System.out.println("Unannotated private replay: no accuracy denominator; SampleFreshness NOT replayed.");
+        System.out.println("mode="+mode+" causes="+(legacy?"INFERRED_0.2_GUARDS":"PRODUCTION_EVENTS_AGGREGATED_3_SCALES")+"; cold filter, missing prehistory, no accuracy denominator.");
     }
 }

@@ -98,9 +98,9 @@ class MainActivity: Activity() {
         text("Diagnostic provisoire",22f)
         torchButton=button("Tester la torche (commuter)") { command(ChopService.TEST_TORCH) }
         captureText=text("")
-        captureButton=button("Capturer 15 secondes (mesures locales)") {
+        captureButton=button("Capturer (max. 15 s / 1000 mesures)") {
             AlertDialog.Builder(this).setTitle("Capture volontaire")
-                .setMessage("Remplace la capture précédente. 15 secondes ou 1000 mesures au maximum, seulement en mémoire. Export uniquement à votre demande. Les traces peuvent révéler vos mouvements ; vérifiez le fichier avant de le partager.")
+                .setMessage("Remplace la capture précédente. Arrêt à la première limite : 15 secondes OU 1000 mesures (environ 8 secondes sur le Pixel observé). Seulement en mémoire. Faites deux doubles chops confortables, sans forcer, espacés de quelques secondes ; arrêtez si inconfortable. Export uniquement à votre demande. Les traces peuvent révéler vos mouvements ; vérifiez le fichier avant partage.")
                 .setPositiveButton("Démarrer") { _,_ -> command(ChopService.CAPTURE) }
                 .setNegativeButton("Annuler",null).show()
         }

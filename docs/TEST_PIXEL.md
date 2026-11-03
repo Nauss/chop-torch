@@ -1,5 +1,8 @@
 # Protocole Pixel 9a — diagnostics A et B1
 
+**Historique : le test physique0.2 a depuis été négatif. Pour0.3 utiliser
+[TEST_B2.md](TEST_B2.md), qui prévaut. Ne pas refaire la capture confortable déjà reçue.**
+
 ## Reprise B1 (0.2) — avant tout essai de veille
 
 Le premier essai 0.1 a déjà confirmé les permissions, l'activation et le bouton torche,

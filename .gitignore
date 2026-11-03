@@ -1,4 +1,5 @@
 .ops/
+.worktrees/
 artifacts/
 .gradle/
 .kotlin/

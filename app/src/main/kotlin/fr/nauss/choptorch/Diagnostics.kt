@@ -23,11 +23,12 @@ object Diagnostics {
     }
     @Synchronized fun begin() {
         samples.clear(); started=SystemClock.elapsedRealtimeNanos()
-        deadline=started+15_000_000_000L; captureState="Capture volontaire en cours (15 s maximum)"
+        deadline=started+15_000_000_000L; captureState="Capture en cours (15 s OU 1000 mesures, première limite atteinte)"
         event("Capture manuelle démarrée")
     }
     @Synchronized fun end() {
-        if (deadline != 0L) captureState="Capture terminée : ${samples.size} mesures réelles"
+        if (deadline != 0L) captureState="Capture terminée : ${samples.size} mesures réelles" +
+            if (samples.size >= 1000) " — limite 1000 mesures atteinte (peut durer moins de 15 s)" else ""
         deadline=0L
     }
     @Synchronized internal fun add(timestampNs: Long, receivedNs: Long, x: Float, y: Float, z: Float, fresh: Boolean, sensitivity: Int) {
@@ -64,6 +65,8 @@ object Diagnostics {
             .put("applicationId", context.packageName)
             .put("warning","Caractéristiques déclarées ≠ consommation mesurée. Veille NON validée. Détecteur expérimental.")
             .put("captureKind", "REAL_SENSOR_VALUES_ONLY_IF_MANUALLY_CAPTURED")
+            .put("captureStartedElapsedRealtimeNs",started)
+            .put("captureLimitMs",15000).put("captureLimitSamples",1000)
             .put("captureStatus",captureState).put("captureColumns",JSONArray(listOf("relative_ms","raw_x_m_s2","raw_y_m_s2","raw_z_m_s2","received_relative_ms","freshness_accepted","sensitivity")))
             .put("samples",JSONArray().apply { samples.forEach { put(JSONArray(it.columns(started))) } })
             .put("events",JSONArray(events.toList())).put("sensors",inventory(context))

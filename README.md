@@ -2,7 +2,17 @@
 
 **Premier APK de faisabilité, pas une application finale validée.** Kotlin + Android Views, minSdk / targetSdk / compileSdk **37**. Détection expérimentale de deux mouvements de hachage consécutifs pour commuter la torche. Aucun lien avec Motorola, aucune reprise d’algorithme propriétaire.
 
-## Diagnostic 0.2 — lot B1
+## Diagnostic 0.3 — lot B2
+
+Le test physique0.2 était **négatif à sensibilité100**. La0.3 corrige une régression
+du curseur démontrée, sépare segmentation fixe et preuve d'amplitude réglable et
+étend la plage faible testée. La référence confortable réelle reçue a été rejouée
+avant gel ; cela reste un ajustement hors ligne, **pas une validation physique de
+l'APK0.3**. Voir [rapport B2](docs/VALIDATION_LOT_B2.md) et
+[protocole confortable B2](docs/TEST_B2.md), qui prévaut sur le protocole historique.
+Ne pas secouer plus fort. Veille, batterie, reprise et F-Droid restent non validés.
+
+## Historique diagnostic 0.2 — lot B1
 
 Le premier essai réel sur **Pixel 9a** a confirmé le bouton torche dans les deux sens,
 mais aucune reconnaissance. Le candidat 0.2 corrige les transitions continues et le retour
@@ -39,22 +49,25 @@ python tools/freeze_lot_a.py
 ```
 
 Ce script historique est réservé au lot A **0.1** ; ne pas le réutiliser pour la 0.2.
-Pour B1 utiliser `tools/freeze_lot_b1.py` avec destination durable et ancien APK explicites,
-voir le rapport B1. Chaque gel refuse l'écrasement. L’empreinte APK varie avec la clé debug
+Pour B1 utiliser `tools/freeze_lot_b1.py` ; pour B2 **0.3/versionCode3**, utiliser
+`tools/freeze_lot_b2.py` depuis le worktree propre, avec destination durable et APK0.2
+explicites (voir rapport B2). Chaque gel refuse l'écrasement. L’empreinte APK varie avec la clé debug
 locale ; aucune reproductibilité binaire intermachines n’est revendiquée. `artifacts/`,
 traces personnelles et `.ops/` sont exclus de Git.
 
 ## Essai et limites
 
-Suivre [le protocole Pixel en français](docs/TEST_PIXEL.md). Activation uniquement depuis l’écran visible et consentement explicite. La seule permission d’exécution demandée est la **notification**, requise par ce diagnostic pour rendre le service visible. Aucune permission `CAMERA` n’est déclarée : l’API torche et le chemin AOSP consulté ne la requièrent pas pour une caméra publique normale ; un refus propre au système reste intercepté et affiché, pas contourné. Voir [décisions et sources officielles](docs/DECISIONS.md).
+Suivre [le protocole B2 en français](docs/TEST_B2.md). Activation uniquement depuis l’écran visible et consentement explicite. La seule permission d’exécution demandée est la **notification**, requise par ce diagnostic pour rendre le service visible. Aucune permission `CAMERA` n’est déclarée : l’API torche et le chemin AOSP consulté ne la requièrent pas pour une caméra publique normale ; un refus propre au système reste intercepté et affiché, pas contourné. Voir [décisions et sources officielles](docs/DECISIONS.md).
 
 Le réglage d’optimisation batterie est ouvert volontairement ; son état réel est affiché et exporté. Aucune exemption n’est imposée ni économie globale désactivée.
 
 **Lot A : réactivation manuelle** après arrêt Android, force-stop, mort du processus, redémarrage ou mise à jour ; pas de receiver boot ni de reprise automatique. Retirer l’activité des récents ne demande pas l’arrêt du service (`stopWithTask=false`), sans garantie physique encore. La préférence de sensibilité et la dernière activation sont enregistrées ; l’état « actif » n’est jamais déduit de cette préférence. La désactivation et le bouton Arrêter de la notification libèrent le capteur et demandent l’extinction de la torche si ChopTorch l’a allumée. La confirmation finale d’extinction après arrêt n’est pas garantie si la ressource est retirée ; Android arrête aussi la torche à la mort du client.
 
-Le détecteur utilise un filtre gravité, une chauffe 500 ms, deux coups accélération/freinage
-soutenus au moins 40 ms chacun et relâchement axial (sans pause artificielle entre coups),
-une direction cohérente, une fenêtre départ-à-départ 150–600 ms, une remise à zéro sur trou
+Le détecteur utilise un filtre gravité unique, trois échelles de segmentation fixes,
+une chauffe500 ms, deux coups accélération/freinage soutenus au moins40 ms chacun,
+limités à240 ms par phase/440 ms par coup et relâchement axial sans pause artificielle.
+Le curseur valide l'amplitude, sans déplacer les horloges des candidats. Il conserve
+une direction cohérente, une fenêtre départ-à-départ150–600 ms, une remise à zéro sur trou
 >120 ms / timestamp non croissant et un cooldown 900 ms. Les événements vieux de plus de
 250 ms ne commandent pas la torche (évite une commutation tardive après livraison FIFO au
 réveil). Seuils et fenêtres **expérimentaux**, à ajuster sur traces réelles séparées de la

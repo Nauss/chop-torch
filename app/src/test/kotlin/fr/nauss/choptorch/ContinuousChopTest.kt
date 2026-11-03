@@ -145,4 +145,15 @@ class ContinuousChopTest {
         val a = Trace(); a.warm(); a.stroke(); a.stroke()
         assertEquals(1, a.hits)
     }
+
+    @Test fun weakContinuousPairsRemainValidWithJitterAndSpatialAxes() {
+        val axes = listOf(doubleArrayOf(1.0, 0.0, 0.0), doubleArrayOf(0.0, -1.0, 0.0),
+            doubleArrayOf(0.0, 0.0, 1.0), doubleArrayOf(-0.6, 0.0, -0.8))
+        for (axis in axes) for (steps in listOf(listOf(8L, 9L, 8L, 8L, 9L), listOf(8L, 17L, 9L), listOf(20L))) {
+            val a = Trace(100, steps); a.warm()
+            a.advance(560) { ms -> DoubleArray(3) { axis[it] * 6.0 * sin(2 * Math.PI * ms / 280.0) } }
+            a.advance(120)
+            assertEquals("axis=${axis.toList()} steps=$steps", 1, a.hits)
+        }
+    }
 }
