@@ -1,0 +1,17 @@
+.ops/
+artifacts/
+.gradle/
+.kotlin/
+**/build/
+local.properties
+*.jks
+*.keystore
+*.apk
+*.apksig
+captures/
+traces/
+.env
+.idea/
+*.iml
+.tools/
+PLAN.md
