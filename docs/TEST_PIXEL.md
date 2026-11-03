@@ -1,4 +1,29 @@
-# Protocole Pixel 9 — lot A diagnostic
+# Protocole Pixel 9a — diagnostics A et B1
+
+## Reprise B1 (0.2) — avant tout essai de veille
+
+Le premier essai 0.1 a déjà confirmé les permissions, l'activation et le bouton torche,
+mais aucun double chop. La capture existante a été exploitée : ne pas la refaire pour
+répondre à cette même investigation. Le capteur vérifié est non-wake-up.
+
+1. Après revue indépendante Roger, **default** recontrôle APK, manifeste, hash et même
+   certificat debug. Si le téléphone autorisé est branché, revalider modèle Pixel 9a,
+   build `CP3A.261005.005` et package `fr.nauss.choptorch.diagnostic` avant l'update.
+2. Mettre à jour avec `adb install -r` uniquement (0.2-diagnostic/versionCode 2).
+   Ne jamais désinstaller, effacer les données ni signer avec une autre clé. Vérifier
+   la version installée. Ouvrir l'interface est autorisé ; ne pas activer le service,
+   la LED ou accorder les permissions automatiquement. Aucun audio.
+3. Le propriétaire réactive volontairement le service et fait quelques doubles chops
+   courts, normalement tenus, **écran allumé**, espacés d'au moins deux secondes.
+   Sensibilité 50 puis 100 si nécessaire ; noter séparément allumage/extinction et
+   éventuelles doubles commutations. Ne pas amplifier dangereusement les mouvements.
+4. Si le résultat reste mauvais, une nouvelle capture **volontaire** v2 pourra alors
+   distinguer l'admission des événements (timestamps de réception exportés) du moteur.
+   Cela ne valide pas la veille : pas de longue veille avant ce petit essai réussi.
+
+L'ancien envoi APK Telegram a été refusé par la politique de livraison : pas de contournement
+par archive, extension ou autre API. Utiliser le relais default/ADB autorisé, ou signaler
+que le branchement manque. Cette procédure ne prétend pas qu'une installation a eu lieu.
 
 Cible fournie par le propriétaire : **Android 17, build `CP3A.261005.005`**. Ne pas modifier cette information ; l’appli cible l’API 37 et ne requiert pas de déterminer un canal stable/bêta.
 
@@ -36,4 +61,6 @@ Cible fournie par le propriétaire : **Android 17, build `CP3A.261005.005`**. Ne
 
 Résultat du test bouton torche ; capteur sélectionné / wake-up ; résultat écran allumé ; résultat du **premier** geste écran éteint après attente ; JSON volontaire si possible. Ne pas envoyer de capture des réglages réseau ou d’information personnelle inutile. Aucun test d’endurance 72 h demandé avant ce premier diagnostic.
 
-**Bilan actuel : tests physiques EN ATTENTE.** Le budget batterie, la fiabilité du geste, les faux positifs en poche, la tenue 72 h et la distribution F-Droid ne sont pas validés par compilation.
+**Bilan actuel : premier test 0.1 exploité ; test physique du nouveau build B1 EN ATTENTE.**
+Le budget batterie, la fiabilité du geste, les faux positifs en poche, la tenue 72 h et la
+distribution F-Droid ne sont pas validés par compilation.

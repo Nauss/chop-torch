@@ -85,10 +85,12 @@ class ChopService: Service(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent) {
         if(stopping || !registered || event.values.size<3) return
         val t=event.timestamp
+        val received=SystemClock.elapsedRealtimeNanos()
         val x=event.values[0]; val y=event.values[1]; val z=event.values[2]
-        Diagnostics.add(t,x,y,z)
+        val fresh=SampleFreshness.accepts(t,received)
+        Diagnostics.add(t,received,x,y,z,fresh,detector.sensitivity)
         count++
-        if(!SampleFreshness.accepts(t,SystemClock.elapsedRealtimeNanos())) {
+        if(!fresh) {
             detector.cancel()
         } else if(detector.sample(t,x.toDouble(),y.toDouble(),z.toDouble())) {
             gestures++; Diagnostics.event("Double chop expérimental reconnu"); torch.toggle()

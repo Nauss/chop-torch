@@ -2,14 +2,23 @@
 
 **Premier APK de faisabilité, pas une application finale validée.** Kotlin + Android Views, minSdk / targetSdk / compileSdk **37**. Détection expérimentale de deux mouvements de hachage consécutifs pour commuter la torche. Aucun lien avec Motorola, aucune reprise d’algorithme propriétaire.
 
-## État réel du lot A
+## Diagnostic 0.2 — lot B1
+
+Le premier essai réel sur **Pixel 9a** a confirmé le bouton torche dans les deux sens,
+mais aucune reconnaissance. Le candidat 0.2 corrige les transitions continues et le retour
+entre coups ; tests synthétiques, replay privé non annoté et limites sont décrits dans
+[VALIDATION_LOT_B1.md](docs/VALIDATION_LOT_B1.md). Ce replay n'est ni un taux de réussite,
+ni une validation physique du nouvel APK. La veille, l'autonomie et les faux positifs
+quotidiens restent non validés. Le capteur réel est non-wake-up.
+
+## État logiciel historique du lot A
 
 - Détecteur JVM, tests **synthétiques**, build APK et lint exécutés ; voir [rapport logiciel](docs/VALIDATION_LOT_A.md).
 - Service foreground `specialUse` activé volontairement ; accéléromètre wake-up préféré, à défaut variante non-wake-up signalée. Cadence demandée : 50 Hz, livraison immédiate, sans wake lock.
 - Torche via `CameraManager.setTorchMode`, état reçu par `TorchCallback`, **aucun flux caméra**.
 - Interface française native : activation, état observé du service, sensibilité bornée 0–100 ; zone diagnostic **provisoire** avec test torche, capture manuelle 15 s / 1000 mesures et export JSON volontaire via le sélecteur Android.
 - Aucun réseau, analytics, publicité, compte, Play Services, micro, accessibilité ou administration.
-- **Installation et recette Pixel non effectuées**, réception écran éteint non validée, pas de mesure d’autonomie ni d’endurance 72 h. Un capteur wake-up ne constitue pas à lui seul une recette réussie. Sans wake-up, aucune réception fiable en suspension n’est assurée.
+- Le bilan initial du lot A ne comprenait pas d'installation ; le premier essai a depuis été exploité dans le lot B1 ci-dessus. Réception écran éteint non validée, pas de mesure d’autonomie ni d’endurance 72 h. Un capteur wake-up ne constitue pas à lui seul une recette réussie. Sans wake-up, aucune réception fiable en suspension n’est assurée.
 
 L’identifiant diagnostic `fr.nauss.choptorch.diagnostic` est distinct du futur identifiant final réservé `fr.nauss.choptorch`. La signature est celle de développement Android, pas une clé pérenne de publication. Ne pas diffuser comme version de production ; une migration distincte sera nécessaire.
 
@@ -29,7 +38,11 @@ APK : `app/build/outputs/apk/debug/app-debug.apk`. Le keystore debug Android nor
 python tools/freeze_lot_a.py
 ```
 
-Ce script exécute un build propre, vérifie APK/manifeste/signature, contrôle la liste exacte des permissions puis gèle la livraison sous `artifacts/lot-a/`. Il refuse d’écraser un APK déjà gelé. L’empreinte APK varie avec la clé debug locale ; aucune reproductibilité binaire intermachines n’est revendiquée. `artifacts/`, traces personnelles et `.ops/` sont exclus de Git.
+Ce script historique est réservé au lot A **0.1** ; ne pas le réutiliser pour la 0.2.
+Pour B1 utiliser `tools/freeze_lot_b1.py` avec destination durable et ancien APK explicites,
+voir le rapport B1. Chaque gel refuse l'écrasement. L’empreinte APK varie avec la clé debug
+locale ; aucune reproductibilité binaire intermachines n’est revendiquée. `artifacts/`,
+traces personnelles et `.ops/` sont exclus de Git.
 
 ## Essai et limites
 
@@ -39,7 +52,13 @@ Le réglage d’optimisation batterie est ouvert volontairement ; son état rée
 
 **Lot A : réactivation manuelle** après arrêt Android, force-stop, mort du processus, redémarrage ou mise à jour ; pas de receiver boot ni de reprise automatique. Retirer l’activité des récents ne demande pas l’arrêt du service (`stopWithTask=false`), sans garantie physique encore. La préférence de sensibilité et la dernière activation sont enregistrées ; l’état « actif » n’est jamais déduit de cette préférence. La désactivation et le bouton Arrêter de la notification libèrent le capteur et demandent l’extinction de la torche si ChopTorch l’a allumée. La confirmation finale d’extinction après arrêt n’est pas garantie si la ressource est retirée ; Android arrête aussi la torche à la mort du client.
 
-Le détecteur utilise un filtre gravité, une chauffe 500 ms, deux phases accélération/freinage soutenues et repos, une direction cohérente, une fenêtre 150–600 ms, une remise à zéro sur trou >120 ms / timestamp non croissant et un cooldown 900 ms. Les événements vieux de plus de 250 ms ne commandent pas la torche (évite une commutation tardive après livraison FIFO au réveil). Seuils et fenêtres **expérimentaux**, à ajuster sur traces réelles séparées de la validation. Les tests ne mesurent pas les faux positifs dans le monde réel.
+Le détecteur utilise un filtre gravité, une chauffe 500 ms, deux coups accélération/freinage
+soutenus au moins 40 ms chacun et relâchement axial (sans pause artificielle entre coups),
+une direction cohérente, une fenêtre départ-à-départ 150–600 ms, une remise à zéro sur trou
+>120 ms / timestamp non croissant et un cooldown 900 ms. Les événements vieux de plus de
+250 ms ne commandent pas la torche (évite une commutation tardive après livraison FIFO au
+réveil). Seuils et fenêtres **expérimentaux**, à ajuster sur traces réelles séparées de la
+validation. Les tests ne mesurent pas les faux positifs dans le monde réel.
 
 ## Confidentialité
 

@@ -13,7 +13,7 @@ import org.json.JSONObject
  */
 object Diagnostics {
     private val events = ArrayDeque<String>()
-    private val samples = ArrayList<DoubleArray>()
+    private val samples = ArrayList<DiagnosticSample>()
     private var started = 0L
     private var deadline = 0L
     private var captureState = "Aucune capture"
@@ -30,11 +30,12 @@ object Diagnostics {
         if (deadline != 0L) captureState="Capture terminée : ${samples.size} mesures réelles"
         deadline=0L
     }
-    @Synchronized fun add(timestamp: Long, x: Float, y: Float, z: Float) {
+    @Synchronized internal fun add(timestampNs: Long, receivedNs: Long, x: Float, y: Float, z: Float, fresh: Boolean, sensitivity: Int) {
         if (deadline == 0L) return
         if (SystemClock.elapsedRealtimeNanos() >= deadline || samples.size >= 1000) { end(); return }
-        if (timestamp < started || timestamp > deadline) return
-        samples.add(doubleArrayOf((timestamp-started)/1e6, x.toDouble(), y.toDouble(), z.toDouble()))
+        // Retain even stale/non-monotonic sensor times received during the
+        // capture: otherwise precisely the rejected events would be hidden.
+        samples.add(DiagnosticSample(timestampNs, receivedNs, x, y, z, fresh, sensitivity))
     }
     @Synchronized fun status(): String {
         if (deadline != 0L && SystemClock.elapsedRealtimeNanos() >= deadline) end()
@@ -57,11 +58,14 @@ object Diagnostics {
     @Synchronized fun export(context: Context): String {
         status()
         val s=LiveState.state
-        return JSONObject().put("format","choptorch-diagnostic-v1").put("sdk",android.os.Build.VERSION.SDK_INT)
+        val info = context.packageManager.getPackageInfo(context.packageName, 0)
+        return JSONObject().put("format","choptorch-diagnostic-v2").put("sdk",android.os.Build.VERSION.SDK_INT)
+            .put("versionName", info.versionName).put("versionCode", info.longVersionCode)
+            .put("applicationId", context.packageName)
             .put("warning","Caractéristiques déclarées ≠ consommation mesurée. Veille NON validée. Détecteur expérimental.")
             .put("captureKind", "REAL_SENSOR_VALUES_ONLY_IF_MANUALLY_CAPTURED")
-            .put("captureStatus",captureState).put("captureColumns",JSONArray(listOf("relative_ms","raw_x_m_s2","raw_y_m_s2","raw_z_m_s2")))
-            .put("samples",JSONArray().apply { samples.forEach { put(JSONArray(it.toList())) } })
+            .put("captureStatus",captureState).put("captureColumns",JSONArray(listOf("relative_ms","raw_x_m_s2","raw_y_m_s2","raw_z_m_s2","received_relative_ms","freshness_accepted","sensitivity")))
+            .put("samples",JSONArray().apply { samples.forEach { put(JSONArray(it.columns(started))) } })
             .put("events",JSONArray(events.toList())).put("sensors",inventory(context))
             .put("running",s.running).put("sensorSelected",s.sensor).put("wakeUp",s.wakeUp)
             .put("sampleCountSinceStart",s.samples).put("lastPeriodMs",s.periodMs)
