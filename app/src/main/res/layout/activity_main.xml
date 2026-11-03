@@ -1,6 +1,12 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/scroll" android:layout_width="match_parent" android:layout_height="match_parent"
-    android:fillViewport="true">
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/safe_area" android:layout_width="match_parent" android:layout_height="match_parent"
+    tools:ignore="MergeRootFrame,UselessParent"
+    android:clipChildren="true" android:clipToPadding="true">
+    <!-- Required: MainActivity pads this non-scrolling parent with live window
+         insets. Merging it would let the scroll viewport cover system bars. -->
+    <ScrollView android:id="@+id/scroll" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:fillViewport="true" android:clipToPadding="true">
     <LinearLayout android:id="@+id/content" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal" android:orientation="vertical" android:padding="24dp">
         <TextView style="@style/Type.Headline" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -63,4 +69,5 @@
                 android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/source" />
         </LinearLayout>
     </LinearLayout>
-</ScrollView>
+    </ScrollView>
+</FrameLayout>

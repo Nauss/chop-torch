@@ -102,7 +102,7 @@ Les tailles restent **sp**, les distances **dp**. Les extensions `native` conser
 
 Une colonne défilable, 24dp de marge, largeur plafonnée à600dp et centrée sur fenêtre large. L’identité est suivie d’une phrase courte, d’un seul groupe tonal pour détection/état, de la sensibilité, puis du bouton d’aide. Groupes espacés de32dp ; contenus liés de4/8/12/16dp. Pas de hauteur fixe de texte.
 
-Insets `systemBars | displayCutout` appliqués au ScrollView et clipping de son padding : le contenu défile sans passer sous les barres. Rotation/recréation Android normales ; sensibilité persistée, aide et refus de permission sauvegardés. Les captures couvrent téléphone portrait/paysage, polices1.0/1.3/2.0 et fenêtre tablette émulée.
+Insets `systemBars | displayCutout` appliqués au parent fixe `safe_area` : le viewport du ScrollView lui-même est mesuré hors des barres, avec clipping explicite du parent et du ScrollView. Le padding seul de l’ancienne implémentation ne garantissait pas cette borne ; la revue Roger a révélé le chevauchement après défilement. La régression native `tools/verify_scroll_insets.py` compare le viewport et ses descendants visibles aux cadres réels des barres système, après plusieurs défilements de l’aide à100% EN et200% FR. Rotation/recréation Android normales ; sensibilité persistée, aide et refus de permission sauvegardés. Les captures couvrent téléphone portrait/paysage, polices1.0/1.3/2.0 et fenêtre tablette émulée.
 
 ## Elevation & Depth
 

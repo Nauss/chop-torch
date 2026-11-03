@@ -35,11 +35,14 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val scroll = findViewById<ScrollView>(R.id.scroll)
+        val safeArea = findViewById<FrameLayout>(R.id.safe_area)
         val content = findViewById<LinearLayout>(R.id.content)
-        scroll.setOnApplyWindowInsetsListener { view, insets ->
+        // Keep the viewport itself outside the bars: padding a scrolling view
+        // does not provide a stable, independently measurable safe-area boundary.
+        safeArea.setOnApplyWindowInsetsListener { view, insets ->
             val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
             view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            content.layoutParams.width = minOf(resources.displayMetrics.widthPixels - bars.left - bars.right, dp(600))
             insets
         }
         content.layoutParams.width = minOf(resources.displayMetrics.widthPixels, dp(600))

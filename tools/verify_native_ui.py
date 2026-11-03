@@ -12,6 +12,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT.parents[1] / 'artifacts/finish/design' if ROOT.parent.name == '.worktrees' else ROOT / 'artifacts/finish/design'
+OUT = Path(os.environ.get('CHOPTORCH_UI_EVIDENCE', str(OUT)))
 ADB = str(Path(os.environ['ANDROID_HOME']) / 'platform-tools/adb.exe')
 SERIAL = 'emulator-5554'
 PKG = 'fr.nauss.choptorch.diagnostic'

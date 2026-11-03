@@ -22,9 +22,10 @@ L’auteur remet le lot pour **revue indépendante Roger**, sans s’auto-approu
 python -m unittest discover -s tools -p 'test_*.py'
 python tools/verify_finish.py
 python tools/verify_native_ui.py
+python tools/verify_scroll_insets.py
 ```
 
-- **51 tests JVM**, zéro échec/erreur ; **15 tests outils Python**, réussis (dont cinq nouveaux contrats de finition).
+- **51 tests JVM**, zéro échec/erreur ; **20 tests outils Python**, réussis (cinq contrats de finition et cinq tests du contrôleur géométrique ajoutés aux dix tests historiques).
 - Lint debug et release : zéro problème ; build debug signé développement et release **unsigned** réussis. Aucune clé de publication créée.
 - Manifest release décodé avec `apkanalyzer` : `debuggable=false`, uniquement `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS`. Aucun `INTERNET`, `CAMERA`, stockage, micro ou permission d’exemption imposée. Service non exporté.
 - Inspection source et DEX release : absence de `Diagnostics`, `DiagnosticSample`, `TEST_TORCH`, `CAPTURE`, `ACTION_CREATE_DOCUMENT`, `openOutputStream`. Ressources FR et EN complètes, aucune chaîne littérale de rendu XML ; thèmes vérifiés dans l’APK par `aapt dump resources`.
@@ -73,7 +74,16 @@ Chaque capture est prise par **`adb exec-out screencap -p`** après vérificatio
 | `11-dark-fr-font200.png`, `12-dark-fr-font200-lower.png` | FR, sombre, police2.0, début/suite défilée |
 | `13-tablet-fr-dark.png` | FR, sombre, police1.0, fenêtre tablette émulée |
 
-Revue visuelle auteur effectuée sur les rendus natifs : hiérarchie nette, texte secondaire lisible, absence de troncature du titre et du switch même à200%, aide atteignable par défilement, colonne centrée sur fenêtre large. Deux défauts ont été corrigés puis recapturés : texte défilant sous la barre de statut (`clipToPadding`) et pouce de switch trop sombre. Le label à200% passe sur deux lignes sans chevaucher le switch. Les états ne reposent pas uniquement sur une couleur.
+Revue visuelle initiale auteur : hiérarchie, contraste du switch et grandes polices inspectés. **L’affirmation initiale de correction du texte sous la barre de statut était erronée** : Roger l’a reproduit sur `06` et `12` du HEAD `2908022`. Ces premières captures racine sont conservées comme preuves historiques, pas comme preuve de correction. Le label à200% passe sur deux lignes sans chevaucher le switch. Les états ne reposent pas uniquement sur une couleur.
+
+### Reprise après revue Roger — insets
+
+- Cause : les insets étaient le padding du ScrollView plein écran ; aucun `clipToPadding` explicite n’était présent dans le XML livré, contrairement au rapport initial. La surface défilante restait `[0,0][1080,2400]` et pouvait dessiner sous les barres. Le test natif ajouté **avant la correction** échoue sur cet APK : `insets-red.log`, chevauchement avec les cadres `[0,0][1080,136]` et `[0,2274][1080,2400]`.
+- Correction localisée : parent `FrameLayout safe_area` fixe, recevant les insets système/cutout ; ScrollView enfant mesuré dans ce rectangle, clipping explicite. Aucun raccourcissement du contenu ni limitation artificielle du scroll. Largeur disponible corrigée pour les insets latéraux. Deux suppressions lint locales `MergeRootFrame,UselessParent` justifiées par ce padding dynamique, invisible à l’analyse statique ; pas de background supplémentaire/overdraw.
+- `verify_scroll_insets.py` : six tentatives de défilement par configuration EN100/FR200, aide réellement ouverte, accès final au bouton source vérifié. À chaque capture, contrôle du viewport **et des descendants visibles** contre les frames actuelles des fenêtres `STATUS_BAR`/`NAVIGATION_BAR` visibles (pas de hauteur codée en dur). Résultat vert : viewport `[0,136][1080,2274]`. Cinq tests unitaires vérifient acceptation, rejet de l’ancien viewport, texte haut/bas et échec fermé si cadres indisponibles.
+- Nouvelle matrice complète `verify_native_ui.py` également réussie. Utiliser `CHOPTORCH_UI_EVIDENCE=C:/root/AI/chop-torch/artifacts/finish/design/insets-fix` pour préserver les premières captures. Les **nouvelles** captures, arbres, configurations et JSON géométriques sont dans `artifacts/finish/design/insets-fix/`. Logs `insets-green.log`, `insets-full-ui.log` et `insets-gradle-final.log` dans le dossier parent.
+- Revue visuelle auteur des nouveaux `06-dark-en-help-lower`, `12-dark-fr-font200-lower`, `08-landscape-font130`, `en-font100-scroll2`, `fr-font200-scroll3` et `fr-font200-scroll6` : contenu défilant coupé à la limite du viewport, **hors** des barres de statut/navigation ; aide intégralement accessible à200%. Une ligne partiellement visible à la limite du viewport pendant un scroll est normale, sans recouvrir l’horloge ou les boutons système.
+- Aucun appareil physique modifié. Détecteur/sources et cinq classes toujours identiques ; tests/lint/build/inspection release rejoués. Une passe mécanique Impeccable sur les deux cibles UI modifiées rend `[]`, toujours **non applicable comme audit natif**. Nouvelle revue Roger requise sur le commit de correction.
 
 Aucun contenu privé vu dans ces images AOSP. Elles restent des **preuves de preview**, pas des screenshots publics F-Droid finaux : package diagnostic et version0.5-ui-preview. P2/P3 devront recapturer la variante publique après vérification. TalkBack parlé, LED et gestes physiques non exercés dans P1 ; attributs d’accessibilité et navigation clavier vérifiés, sans revendiquer une recette de lecteur d’écran complète.
 
