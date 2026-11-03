@@ -62,6 +62,23 @@ class ReplayToolTest(unittest.TestCase):
         self.assertNotEqual(0, rejected.returncode)
         self.assertIn('V1 lacks receipt timestamps', rejected.stderr)
 
+    def test_state_probe_is_opt_in_and_preserves_replay_and_admission(self):
+        data = self.fixture()
+        data['samples'][35][1] = 24.0
+        data['samples'][36][4] += 300
+        plain = self.replay(data, '--mode', 'recomputed-freshness')
+        probe = self.replay(data, '--mode', 'recomputed-freshness', '--state')
+        self.assertEqual(0, probe.returncode, probe.stderr)
+        summaries = lambda text: [line for line in text.splitlines() if line.startswith('sensitivity=')]
+        self.assertEqual(summaries(plain.stdout), summaries(probe.stdout))
+        self.assertNotIn('STATE ', plain.stdout)
+        self.assertIn('STATE ', probe.stdout)
+        self.assertIn('arm=2.5', probe.stdout)
+        self.assertIn('supportNs=', probe.stdout)
+        self.assertIn('cooldownUntil=', probe.stdout)
+        self.assertIn('Compiled detector class ChopDetector$StrokeScale.class SHA256=', probe.stdout)
+        self.assertIn('admission=REJECTED', probe.stdout)
+
     def test_capture_checksum_mismatch_is_refused(self):
         result = self.replay(self.fixture(), '--expected-sha256', '0' * 64)
         self.assertNotEqual(0, result.returncode)

@@ -22,6 +22,7 @@ def main() -> None:
     parser.add_argument('capture', type=Path)
     parser.add_argument('--expected-sha256')
     parser.add_argument('--detail', action='store_true')
+    parser.add_argument('--state', action='store_true', help='PRIVATE offline per-sample scale/filter snapshots; implies detail; no intent labels')
     parser.add_argument('--mode', choices=['auto', 'detector-only', 'recorded-freshness', 'recomputed-freshness'], default='auto')
     args = parser.parse_args()
     raw = args.capture.read_bytes()
@@ -60,11 +61,17 @@ def main() -> None:
         csv = Path(temp) / 'samples.csv'
         csv.write_text(''.join(','.join(str(v).lower() if type(v) is bool else str(v) for v in row) + '\n' for row in samples), encoding='utf-8')
         command = ['java', '-cp', os.pathsep.join([str(classes), str(jars[0])]), str(ROOT / 'tools/ReplayCapture.java'), str(csv), mode]
-        if args.detail:
+        if args.state:
+            command.append('--state')
+        elif args.detail:
             command.append('--detail')
         print('PRIVATE UNANNOTATED capture; sha256=' + digest, flush=True)
         print('Replay at fixed sensitivities 0/50/100; mode=' + mode + '; per-sample sensitivity is validated but deliberately overridden.', flush=True)
         print('Compiled detector SHA256=' + hashlib.sha256((classes / 'fr/nauss/choptorch/ChopDetector.class').read_bytes()).hexdigest(), flush=True)
+        # Kotlin inner classes contain the actual segmentation guards. The outer
+        # class hash alone cannot identify an experimental detector revision.
+        for compiled in sorted((classes / 'fr/nauss/choptorch').glob('ChopDetector$*.class')):
+            print('Compiled detector class ' + compiled.name + ' SHA256=' + hashlib.sha256(compiled.read_bytes()).hexdigest(), flush=True)
         subprocess.run(command, check=True, cwd=ROOT)
     if hashlib.sha256(args.capture.read_bytes()).hexdigest() != digest:
         raise RuntimeError('Original changed during replay')

@@ -26,13 +26,35 @@ class ReplayCapture {
             return (ChopDetector)ChopDetector.class.getConstructor(int.class, observer).newInstance(sensitivity, sink);
         } catch (ClassNotFoundException historical) { return new ChopDetector(sensitivity); }
     }
+    // Development-only reflection: never ships in the APK. Fail closed on schema drift.
+    static Object value(Object o, String name) throws Exception {
+        Field f = o.getClass().getDeclaredField(name); f.setAccessible(true); return f.get(o);
+    }
+    static String snapshot(ChopDetector d) throws Exception {
+        StringBuilder s = new StringBuilder("gravity="+Arrays.toString((double[])value(d,"gravity"))
+            +" warmUntil="+value(d,"warmUntil")+" cooldownUntil="+value(d,"cooldownUntil"));
+        for (Object scale : (List<?>)value(d,"scales")) {
+            s.append(" {arm=").append(value(scale,"arm"));
+            for (String key : new String[]{"phase","began","phaseAt","supportNs","supportedLast","accelerationPeak","brakingPeak","firstAt"})
+                s.append(" ").append(key).append("=").append(value(scale,key));
+            s.append(" direction=").append(Arrays.toString((double[])value(scale,"direction")));
+            s.append(" firstDirection=").append(Arrays.toString((double[])value(scale,"firstDirection"))).append("}");
+        }
+        return s.toString();
+    }
+    static void state(int sensitivity, double ms, String admission, String before, ChopDetector d) throws Exception {
+        System.out.printf(Locale.ROOT,"STATE s=%d t=%.6f admission=%s before=%s after=%s%n",sensitivity,ms,admission,before,snapshot(d));
+    }
     public static void main(String[] args) throws Exception {
-        if (args.length < 2 || args.length > 3) throw new IllegalArgumentException("CSV, mode, optional --detail required");
-        String mode = args[1]; boolean detail = args.length == 3 && args[2].equals("--detail");
+        if (args.length < 2 || args.length > 3) throw new IllegalArgumentException("CSV, mode, optional --detail/--state required");
+        boolean probe = args.length == 3 && args[2].equals("--state");
+        if (args.length == 3 && !probe && !args[2].equals("--detail")) throw new IllegalArgumentException("Unknown probe option");
+        String mode = args[1]; boolean detail = args.length == 3;
         if (!Set.of("detector-only", "recorded-freshness", "recomputed-freshness").contains(mode)) throw new IllegalArgumentException("Unknown admission mode");
         boolean legacy;
         try { Class.forName("fr.nauss.choptorch.ChopDetector$Observer"); legacy = false; }
         catch (ClassNotFoundException historical) { legacy = true; }
+        if (probe && legacy) throw new IllegalArgumentException("State probe requires fixed-scale engine; historical replay remains available without --state");
         List<String> rows = Files.readAllLines(Path.of(args[0]));
         for (int sensitivity : new int[]{0, 50, 100}) {
             Map<String,Integer> counts = new TreeMap<>();
@@ -47,6 +69,7 @@ class ReplayCapture {
                 clock[0] = ms;
                 long ns = 1_000_000_000L + Math.round(ms * 1e6);
                 double[] raw = {Double.parseDouble(c[1]), Double.parseDouble(c[2]), Double.parseDouble(c[3])};
+                String beforeState = probe ? snapshot(d) : null;
                 if (!mode.equals("detector-only")) {
                     if (c.length != 7) throw new IllegalArgumentException("V1 lacks receipt/admission data");
                     long received = 1_000_000_000L + Math.round(Double.parseDouble(c[4]) * 1e6);
@@ -54,7 +77,9 @@ class ReplayCapture {
                     boolean computed = SampleFreshness.INSTANCE.accepts(ns, received);
                     if (recorded != computed) mismatches++;
                     if (!(mode.equals("recorded-freshness") ? recorded : computed)) {
-                        d.cancel(); admissionRejected++; continue;
+                        d.cancel(); admissionRejected++;
+                        if (probe) state(sensitivity, ms, "REJECTED", beforeState, d);
+                        continue;
                     }
                 }
                 int before = legacy ? (int)field(d,"phase") : 0;
@@ -63,6 +88,7 @@ class ReplayCapture {
                 double[] dir = legacy ? ((double[])field(d,"direction")).clone() : null;
                 double[] previous = legacy ? (double[])field(d,"firstDirection") : null;
                 boolean hit = d.sample(ns,raw[0],raw[1],raw[2]);
+                if (probe) state(sensitivity, ms, mode.equals("detector-only") ? "BYPASSED" : "ACCEPTED", beforeState, d);
                 int after = legacy ? (int)field(d,"phase") : 0;
                 if (hit) hits.add(ms);
                 if (legacy) {
