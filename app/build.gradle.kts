@@ -7,8 +7,8 @@ android {
         applicationId = "fr.nauss.choptorch.diagnostic"
         minSdk = 37
         targetSdk = 37
-        versionCode = 3
-        versionName = "0.3-diagnostic"
+        versionCode = 4
+        versionName = "0.4-diagnostic"
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     lint {

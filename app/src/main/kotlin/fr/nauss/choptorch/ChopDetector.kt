@@ -75,16 +75,19 @@ class ChopDetector @JvmOverloads constructor(sensitivity: Int = 50, private val 
         private var supportNs = 0L
         private var supportedLast = false
         private var direction = doubleArrayOf(0.0, 0.0, 0.0)
+        private var accelerationIntegral = doubleArrayOf(0.0, 0.0, 0.0)
         private var accelerationPeak = 0.0
         private var brakingPeak = 0.0
         private var firstDirection: DoubleArray? = null
+        private var firstTravel: DoubleArray? = null
         private var firstAt = 0L
-        fun cancel() { phase = 0; firstDirection = null; supportNs = 0L; supportedLast = false }
+        fun cancel() { phase = 0; firstDirection = null; firstTravel = null; supportNs = 0L; supportedLast = false }
         private fun reject(event: Event) { cancel(); report(event) }
         private fun start(t: Long, linear: DoubleArray, magnitude: Double) {
             direction = DoubleArray(3) { linear[it] / magnitude }
             began = t; phaseAt = t; phase = 1
             supportNs = 0L; supportedLast = true
+            accelerationIntegral = doubleArrayOf(0.0, 0.0, 0.0)
             accelerationPeak = magnitude; brakingPeak = 0.0
             report(Event.ARMED)
         }
@@ -100,7 +103,10 @@ class ChopDetector @JvmOverloads constructor(sensitivity: Int = 50, private val 
                 1 -> {
                     accelerationPeak = maxOf(accelerationPeak, dot)
                     val supported = dot >= accelerationSupport
-                    if (supported && supportedLast) supportNs += stepNs
+                    if (supported && supportedLast) {
+                        supportNs += stepNs
+                        for (i in linear.indices) accelerationIntegral[i] += linear[i] * (stepNs / 1e9)
+                    }
                     supportedLast = supported
                     // Both half-stroke guards include the threshold ramp.
                     // Old160/180 ms guards lost400 ms strokes at high sensitivity.
@@ -128,9 +134,20 @@ class ChopDetector @JvmOverloads constructor(sensitivity: Int = 50, private val 
                             reject(Event.AMPLITUDE_LOW); return false
                         }
                         // Axial release, not artificial 3-D rest between strokes.
+                        // Two independent direction witnesses: coherent onsets OR
+                        // coherent sustained travel. Never cross-match the witnesses.
+                        // Preserve onset-coherent curved strokes; a single noisy onset
+                        // must not veto an otherwise sustained, aligned pair.
+                        // Keep the onset axis for segmentation and all signed guards.
+                        // Positive signed support guarantees a nonzero finite integral.
+                        val integralMagnitude = sqrt(accelerationIntegral.sumOf { it * it })
+                        val travel = DoubleArray(3) { accelerationIntegral[it] / integralMagnitude }
                         val previous = firstDirection
                         val interval = began - firstAt
-                        val aligned = previous != null && previous.indices.sumOf { previous[it] * direction[it] } >= 0.80
+                        val previousTravel = firstTravel
+                        val aligned = previous != null &&
+                            (previous.indices.sumOf { previous[it] * direction[it] } >= 0.80 ||
+                                (previousTravel != null && previousTravel.indices.sumOf { previousTravel[it] * travel[it] } >= 0.80))
                         phase = 0
                         if (aligned && interval in 150_000_000L..600_000_000L) return true
                         if (previous == null) report(Event.FIRST_STROKE)
@@ -138,7 +155,7 @@ class ChopDetector @JvmOverloads constructor(sensitivity: Int = 50, private val 
                             if (!aligned) report(Event.PAIR_DIRECTION)
                             if (interval !in 150_000_000L..600_000_000L) report(Event.PAIR_INTERVAL)
                         }
-                        firstDirection = direction.copyOf(); firstAt = began
+                        firstDirection = direction.copyOf(); firstTravel = travel; firstAt = began
                         // Release can already start the next thrust on this scale.
                         if (dot >= arm) start(timestampNs, linear, magnitude)
                     }

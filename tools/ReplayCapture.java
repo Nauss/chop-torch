@@ -38,7 +38,12 @@ class ReplayCapture {
             for (String key : new String[]{"phase","began","phaseAt","supportNs","supportedLast","accelerationPeak","brakingPeak","firstAt"})
                 s.append(" ").append(key).append("=").append(value(scale,key));
             s.append(" direction=").append(Arrays.toString((double[])value(scale,"direction")));
-            s.append(" firstDirection=").append(Arrays.toString((double[])value(scale,"firstDirection"))).append("}");
+            s.append(" firstDirection=").append(Arrays.toString((double[])value(scale,"firstDirection")));
+            try {
+                s.append(" accelerationIntegral=").append(Arrays.toString((double[])value(scale,"accelerationIntegral")));
+                s.append(" firstTravel=").append(Arrays.toString((double[])value(scale,"firstTravel")));
+            } catch (NoSuchFieldException historical03) { s.append(" sustainedWitness=UNAVAILABLE"); }
+            s.append("}");
         }
         return s.toString();
     }

@@ -2,7 +2,19 @@
 
 **Premier APK de faisabilité, pas une application finale validée.** Kotlin + Android Views, minSdk / targetSdk / compileSdk **37**. Détection expérimentale de deux mouvements de hachage consécutifs pour commuter la torche. Aucun lien avec Motorola, aucune reprise d’algorithme propriétaire.
 
-## Diagnostic 0.3 — lot B2
+## Diagnostic 0.4 — candidat lot B3
+
+Le rythme normal fonctionne mieux sur0.3 mais l'utilisateur rapporte des échecs
+rapides après répétitions. Une nouvelle capture d'un seul essai rapide non déclenché
+a permis d'isoler une direction faussée au départ du coup :0.4 conserve la direction
+initiale et ajoute un témoin directionnel soutenu, sans changer les gardes temporelles,
+l'amplitude ou le cooldown. Le cas réel est récupéré **hors ligne**, avec références
+normale et rapide préservées au même réglage. **Pas encore de validation physique
+ni d'installation de0.4.** Revue indépendante obligatoire avant remise.
+Voir [rapport B3](docs/VALIDATION_LOT_B3.md) et [protocole B3](docs/TEST_B3.md).
+Veille, énergie, reprise et F-Droid restent séparés.
+
+## Historique diagnostic 0.3 — lot B2
 
 Le test physique0.2 était **négatif à sensibilité100**. La0.3 corrige une régression
 du curseur démontrée, sépare segmentation fixe et preuve d'amplitude réglable et
@@ -57,7 +69,7 @@ traces personnelles et `.ops/` sont exclus de Git.
 
 ## Essai et limites
 
-Suivre [le protocole B2 en français](docs/TEST_B2.md). Activation uniquement depuis l’écran visible et consentement explicite. La seule permission d’exécution demandée est la **notification**, requise par ce diagnostic pour rendre le service visible. Aucune permission `CAMERA` n’est déclarée : l’API torche et le chemin AOSP consulté ne la requièrent pas pour une caméra publique normale ; un refus propre au système reste intercepté et affiché, pas contourné. Voir [décisions et sources officielles](docs/DECISIONS.md).
+Suivre [le protocole B3 en français](docs/TEST_B3.md) après revue/remise du candidat0.4. Activation uniquement depuis l’écran visible et consentement explicite. La seule permission d’exécution demandée est la **notification**, requise par ce diagnostic pour rendre le service visible. Aucune permission `CAMERA` n’est déclarée : l’API torche et le chemin AOSP consulté ne la requièrent pas pour une caméra publique normale ; un refus propre au système reste intercepté et affiché, pas contourné. Voir [décisions et sources officielles](docs/DECISIONS.md).
 
 Le réglage d’optimisation batterie est ouvert volontairement ; son état réel est affiché et exporté. Aucune exemption n’est imposée ni économie globale désactivée.
 
@@ -67,7 +79,8 @@ Le détecteur utilise un filtre gravité unique, trois échelles de segmentation
 une chauffe500 ms, deux coups accélération/freinage soutenus au moins40 ms chacun,
 limités à240 ms par phase/440 ms par coup et relâchement axial sans pause artificielle.
 Le curseur valide l'amplitude, sans déplacer les horloges des candidats. Il conserve
-une direction cohérente, une fenêtre départ-à-départ150–600 ms, une remise à zéro sur trou
+une direction cohérente d'armement ou de soutien intégré (sans croiser les témoins),
+une fenêtre départ-à-départ150–600 ms, une remise à zéro sur trou
 >120 ms / timestamp non croissant et un cooldown 900 ms. Les événements vieux de plus de
 250 ms ne commandent pas la torche (évite une commutation tardive après livraison FIFO au
 réveil). Seuils et fenêtres **expérimentaux**, à ajuster sur traces réelles séparées de la

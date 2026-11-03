@@ -1,4 +1,10 @@
-# B3 — investigation hors ligne, sans nouvel APK
+# B3 — première investigation historique, sans nouvel APK à cette étape
+
+> **État historique dépassé par une nouvelle mesure.** L'essai isolé demandé a
+> été fourni, avec résultat « non déclenché ». Le blocage décrit ci-dessous est
+> résolu ; ne pas redemander les répétitions ou cette capture. La reprise causale,
+> le correctif et ses limites sont décrits dans [VALIDATION_LOT_B3.md](VALIDATION_LOT_B3.md).
+> Ce document conserve l'expérience antérieure annulée, sans la réécrire comme un succès.
 
 ## Résultat et frontière de preuve
 

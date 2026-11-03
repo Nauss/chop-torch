@@ -75,6 +75,8 @@ class ReplayToolTest(unittest.TestCase):
         self.assertIn('STATE ', probe.stdout)
         self.assertIn('arm=2.5', probe.stdout)
         self.assertIn('supportNs=', probe.stdout)
+        self.assertIn('accelerationIntegral=', probe.stdout)
+        self.assertIn('firstTravel=', probe.stdout)
         self.assertIn('cooldownUntil=', probe.stdout)
         self.assertIn('Compiled detector class ChopDetector$StrokeScale.class SHA256=', probe.stdout)
         self.assertIn('admission=REJECTED', probe.stdout)
