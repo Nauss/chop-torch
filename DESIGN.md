@@ -114,7 +114,7 @@ Conteneur à coins20dp. Icône vectorielle torche à silhouette simple, graphite
 
 ## Components
 
-- **Détection** : `Switch` Android, cible d’au moins56dp, label lisible, vrai état observé. Consentement avant démarrage, demande notification au moment utile. Le switch n’affiche jamais une préférence enregistrée comme preuve de service actif.
+- **Détection** : `Switch` Android, cible d’au moins56dp et label lisible. P1 l’alignait sur le service observé ; P2 lui confie l’intention activée, annulable même pendant un démarrage/reprise en attente. Le texte d’état séparé reste la vérité observée : une préférence conservée n’est jamais présentée comme preuve de service actif, et une aide explicite indique le cas en attente. Consentement avant démarrage, demande notification au moment utile ; restauration automatique de l’état View désactivée pour ne pas rejouer le consentement.
 - **État** : texte explicite actif/désactivé/activation et état torche issu de `TorchCallback`. Erreur utile sans nom d’exception ou compteur. Mise à jour `polite`, uniquement sur changement ; aucun ticker ni publication à chaque mesure.
 - **Sensibilité** : `SeekBar` Android0–100, cible48dp, nom accessible, valeur `stateDescription` et bornes textuelles. Valeur persistée, réglage effectif envoyé au service existant. Valeur élevée = geste plus léger, sans modification des gardes du moteur.
 - **Aide** : expansion inline, pas une navigation supplémentaire. Geste sûr, limites de veille/batterie, fiche Android de l’application, confidentialité, version/licence/source. Le bouton de réglage notification n’apparaît qu’après un refus utile à récupérer.

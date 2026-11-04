@@ -5,6 +5,7 @@
     <string name="state_off">Détection désactivée</string>
     <string name="state_starting">Activation…</string>
     <string name="state_off_hint">Activez pour utiliser le double chop.</string>
+    <string name="state_pending_hint">L’activation est conservée, mais la détection ne fonctionne pas. Désactivez pour annuler, ou désactivez puis réactivez pour réessayer.</string>
     <string name="sensitivity">Sensibilité</string>
     <string name="sensitivity_value">%1$d / 100</string>
     <string name="sensitivity_hint">Une valeur élevée détecte des mouvements plus légers.</string>

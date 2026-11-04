@@ -12,6 +12,7 @@ class ChopService: Service(), SensorEventListener {
     private lateinit var handler: Handler
     private lateinit var sensors: SensorManager
     private lateinit var torch: TorchController
+    private lateinit var notification: Notification
     @Volatile private var registered=false
     @Volatile private var stopping=false
     private var detector=ChopDetector()
@@ -31,19 +32,30 @@ class ChopService: Service(), SensorEventListener {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         val open=PendingIntent.getActivity(this,0,Intent(this,MainActivity::class.java),PendingIntent.FLAG_IMMUTABLE)
         val stop=PendingIntent.getService(this,1,Intent(this,ChopService::class.java).setAction(STOP),PendingIntent.FLAG_IMMUTABLE)
-        val notification=Notification.Builder(this,"gesture").setSmallIcon(R.drawable.ic_notification)
+        notification=Notification.Builder(this,"gesture").setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.notification_title)).setContentText(getString(R.string.notification_text))
             .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true)
             .addAction(Notification.Action.Builder(null,getString(R.string.stop),stop).build()).build()
-        try { startForeground(1,notification,ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE) }
+    }
+    private fun promote(): Boolean {
+        return try { startForeground(1,notification,ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE); true }
         catch(_: RuntimeException) {
             stopping=true
             Activation.setEnabled(this,false)
             LiveState.update { it.copy(running=false,error=R.string.error_start) }
             stopSelf()
+            false
         }
     }
     @Synchronized override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // A rapid stop/start may reuse the instance: every new FGS start must
+        // satisfy Android's promotion deadline, not only the first onCreate.
+        if(!promote()) return START_NOT_STICKY
+        if(intent?.action==DISABLE_REQUEST) {
+            // Ignore an old queued UI stop if fresh explicit consent followed it.
+            if(Activation.enabled(this)) return START_STICKY
+            stopping=true; stopSelf(); return START_NOT_STICKY
+        }
         if(intent?.action==STOP) {
             Activation.setEnabled(this,false)
             stopping=true
@@ -72,7 +84,8 @@ class ChopService: Service(), SensorEventListener {
         return START_STICKY
     }
     @Synchronized private fun startSensors() {
-        if(stopping || !Activation.enabled(this)) return
+        if(stopping) return
+        if(!Activation.enabled(this)) { stopping=true; stopSelf(); return }
         val sensor=sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER,true)
             ?: sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER,false)
         if(sensor==null) { fail(R.string.error_sensor_missing); return }
@@ -82,7 +95,7 @@ class ChopService: Service(), SensorEventListener {
         if(!registered) { fail(R.string.error_sensor_access); return }
         val torchError=torch.open()
         if(torchError!=0) { fail(torchError); return }
-        if(stopping || !Activation.enabled(this)) return
+        if(stopping || !Activation.enabled(this)) { stopSelf(); return }
         LiveState.update { it.copy(running=true,error=0) }
     }
     @Synchronized private fun fail(message: Int) {
@@ -124,6 +137,7 @@ class ChopService: Service(), SensorEventListener {
     }
     companion object {
         const val STOP="fr.nauss.choptorch.STOP"
+        const val DISABLE_REQUEST="fr.nauss.choptorch.DISABLE_REQUEST"
         const val SENSITIVITY="fr.nauss.choptorch.SENSITIVITY"
     }
 }

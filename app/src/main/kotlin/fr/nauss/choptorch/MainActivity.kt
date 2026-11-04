@@ -47,6 +47,8 @@ class MainActivity : Activity() {
         }
         content.layoutParams.width = minOf(resources.displayMetrics.widthPixels, dp(600))
         activation = findViewById(R.id.activation)
+        // Saved View state must never replay consent callbacks on recreation.
+        activation.isSaveEnabled = false
         stateText = findViewById(R.id.state)
         detail = findViewById(R.id.detail)
         recovery = findViewById(R.id.recovery)
@@ -64,6 +66,7 @@ class MainActivity : Activity() {
                         .setPositiveButton(R.string.enable) { _, _ -> requestActivation() }
                         .setNegativeButton(android.R.string.cancel, null).show()
                 } else {
+                    starting = false
                     Activation.stop(this)
                     render()
                 }
@@ -156,8 +159,10 @@ class MainActivity : Activity() {
     private fun render() {
         val state = LiveState.state
         rendering = true
-        activation.isChecked = state.running
-        activation.isEnabled = !starting
+        // The switch controls saved consent; the label below remains observed truth.
+        // Keep cancellation available even while Android recovery/start is pending.
+        activation.isChecked = starting || Activation.enabled(this) || state.running
+        activation.isEnabled = true
         rendering = false
         stateText.setText(when {
             starting -> R.string.state_starting
@@ -169,6 +174,7 @@ class MainActivity : Activity() {
             Activation.blockedReason(this) == R.string.error_restricted -> R.string.error_restricted
             state.error != 0 -> state.error
             state.running -> state.torch
+            Activation.enabled(this) -> R.string.state_pending_hint
             else -> R.string.state_off_hint
         })
         recovery.visibility = if (notificationDenied) View.VISIBLE else View.GONE

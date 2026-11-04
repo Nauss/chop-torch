@@ -21,6 +21,13 @@ class LifecycleInstrumentation : Instrumentation() {
             check(!LiveState.state.running) { "Fresh/disabled app started detection" }
             check(!prefs.getBoolean("enabled", false)) { "Service invented user intent" }
             Activation.setEnabled(targetContext, true)
+            val pendingActivity = startActivitySync(Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            var cancelAvailable = false
+            runOnMainSync { cancelAvailable = pendingActivity.findViewById<android.widget.Switch>(R.id.activation).isChecked }
+            check(cancelAvailable) { "Saved pending activation cannot be cancelled from UI" }
+            runOnMainSync { pendingActivity.findViewById<android.widget.Switch>(R.id.activation).performClick(); pendingActivity.finish() }
+            check(!Activation.enabled(targetContext))
+            Activation.setEnabled(targetContext, true)
             runOnMainSync { targetContext.startForegroundService(Intent(targetContext, ChopService::class.java).setAction(ChopService.SENSITIVITY)) }
             Thread.sleep(500)
             check(targetContext.getSystemService(android.app.NotificationManager::class.java).activeNotifications.isEmpty()) {
@@ -54,7 +61,7 @@ class LifecycleInstrumentation : Instrumentation() {
                 runOnMainSync { Activation.start(targetContext, userInitiated = true) }
                 runOnMainSync { Activation.stop(targetContext) }
             }
-            Thread.sleep(800)
+            Thread.sleep(6000)
             check(!LiveState.state.running && !Activation.enabled(targetContext)) { "Queued work revived stopped detection" }
             val manager = targetContext.getSystemService(android.app.NotificationManager::class.java)
             manager.createNotificationChannel(android.app.NotificationChannel("gesture", "Blocked test channel", android.app.NotificationManager.IMPORTANCE_NONE))

@@ -6,6 +6,7 @@
     <string name="state_off">Detection off</string>
     <string name="state_starting">Starting…</string>
     <string name="state_off_hint">Enable to use the double chop.</string>
+    <string name="state_pending_hint">Activation is saved, but detection is not running. Turn off to cancel, or off and on to try again.</string>
     <string name="sensitivity">Sensitivity</string>
     <string name="sensitivity_value">%1$d / 100</string>
     <string name="sensitivity_hint">Higher values detect lighter movements.</string>

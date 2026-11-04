@@ -65,6 +65,11 @@ object Activation {
     }
     fun stop(context: Context) {
         setEnabled(context, false)
-        context.stopService(Intent(context, ChopService::class.java))
+        // Do not cancel a queued startForegroundService before its promotion:
+        // Android may retain its deadline. The saved false gates that pending start.
+        if (LiveState.state.running) {
+            try { context.startService(Intent(context, ChopService::class.java).setAction(ChopService.DISABLE_REQUEST)) }
+            catch (_: RuntimeException) { context.stopService(Intent(context, ChopService::class.java)) }
+        }
     }
 }

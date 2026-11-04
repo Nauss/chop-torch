@@ -33,15 +33,15 @@ Preuves durables **hors worktree** : `C:/root/AI/chop-torch/artifacts/finish/rea
 - Release vraiment unsigned (apksigner verify échoue faute de signature), non debuggable, package/version/code/API vérifiés sur manifeste compilé. Permissions exactes : FGS, FGS_SPECIAL_USE, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED. Receiver/service non exportés. Aucun INTERNET, CAMERA, stockage, micro, accessibility ou root.
 - DEX release : diagnostics, échantillons de capture, commandes capture/export/test et instrumentation absents. Clés et keystores absents de l’APK/graphe build.
 - Sources détecteur/SampleFreshness et **cinq classes compilées, classes internes incluses**, identiques à la référence5a77634. **11 sorties de replay privées** (v1 detector-only et cinq références v2 en recorded/recomputed freshness) identiques octet pour octet à B3 accepté après normalisation CRLF ; entrées originales inchangées. Aucun taux de réussite physique revendiqué.
-- Deux assemblages clean unsigned locaux identiques : **92d06d680d8e391c8c01c4cbfd7e6777d31fd756441005afc86ab59cd2321132**. Cela ne démontre pas la reproductibilité intermachines ni le build officiel F-Droid.
+- Deux assemblages clean unsigned locaux identiques : **d147b0cbb1c4402d54eb8b18ebbc42d287088d9259bb0d857c2f8583375317fc**. Cela ne démontre pas la reproductibilité intermachines ni le build officiel F-Droid.
 
 ### Android natif, pas seulement mocks
 
 AVD explicitement jetables, Android API37. Aucun téléphone sélectionné ou redémarré.
 
-`21-instrumentation-green.log` : vrai framework/service et préférences, app fraîche/désactivée, commande sensibilité orpheline, départ valide, starts répétés, réglage/commande obsolète sur service existant, arrêt par le PendingIntent réel de notification, boot désactivé, reprise update via receiver de production, dix start/stop rapides puis état arrêté, canal notification bloqué refusé. L’appel direct du receiver dans cette instrumentation est distingué de la livraison système ci-dessous.
+`43-stop-instrumentation.log` : vrai framework/service et préférences, app fraîche/désactivée, intention conservée mais service absent annulable depuis la vraie Activity, commande sensibilité orpheline, départ valide, starts répétés, réglage/commande obsolète sur service existant, arrêt par le PendingIntent réel de notification, boot désactivé, reprise update via receiver de production, dix start/stop rapides puis attente6 s et état arrêté, canal notification bloqué refusé. L’appel direct du receiver dans cette instrumentation est distingué de la livraison système ci-dessous.
 
-`22-lifecycle-final.log` / `native-final/checks.json` : **12 scénarios** via installation et UI native :
+`44-lifecycle-final.log` / `native-final/checks.json` : **12 scénarios** via installation et UI native :
 
 1. Installation fraîche désactivée.
 2. Refus de notification, pas de service.
@@ -56,13 +56,13 @@ AVD explicitement jetables, Android API37. Aucun téléphone sélectionné ou re
 11. Révocation notification, remplacement, réautorisation puis remplacement : pas de consentement inventé.
 12. Restriction réelle d’arrière-plan sur AVD : activation refusée et UI fidèle ; réglage AVD restauré.
 
-`32-missing-torch-final.log` et `34-missing-sensor-final.log` : second AVD, successivement sans caméra/flash puis sans accéléromètre, échec d’activation fidèle et consentement effacé, sans boucle. Ce sont des **absences configurées réelles**, pas des débranchements à chaud d’un capteur statique ou des essais d’usure physique.
+`54-missing-torch-final.log` et `51-missing-sensor-final.log` : second AVD, successivement sans caméra/flash puis sans accéléromètre, échec d’activation fidèle et consentement effacé, sans boucle. Ce sont des **absences configurées réelles**, pas des débranchements à chaud d’un capteur statique ou des essais d’usure physique.
 
-`23-ui-final.log` / `24-insets-final.log` : navigation native, annulation, refus/accord, arrêt, sensibilité au clavier et persistance, FR/EN, clair/sombre, aide, 130/200%, rotation/tablette ; aide/source atteignables et viewport hors barres sur six offsets EN100 et FR200. Captures store inspectées visuellement : propres, sans PII ni diagnostics. Quatre PNG natifs copiés exactement dans fastlane ; seul `icon.png` est dessiné depuis la géométrie vectorielle du projet. P1 esthétique conservée, pas de faux screenshot web.
+`46-ui-final.log` / `47-insets-final.log` : navigation native, annulation, refus/accord, arrêt, sensibilité au clavier et persistance, FR/EN, clair/sombre, aide, 130/200%, rotation/tablette ; aide/source atteignables et viewport hors barres sur six offsets EN100 et FR200. Captures store inspectées visuellement : propres, sans PII ni diagnostics. Quatre PNG natifs copiés exactement dans fastlane ; seul `icon.png` est dessiné depuis la géométrie vectorielle du projet. P1 esthétique conservée, pas de faux screenshot web.
 
 ### Signature sûre exercée, pas signature publique
 
-`26-signing-final.log` : environnement Python isolé, coffre Windows Credential Manager réellement testé avec **une nouvelle entrée de test unique**, vérifiée puis supprimée, sans consulter de credential existant. Clé jetable via vrai keytool, zipalign avant apksigner, vérification certificat/alignement ; refus d’écrasement de clé/sortie et de fingerprint incorrect ; clé/APK temporaires supprimés. Le mot de passe de cette clé de test reste uniquement en mémoire ; aucune clé de publication créée.
+`49-signing-final.log` : environnement Python isolé, coffre Windows Credential Manager réellement testé avec **une nouvelle entrée de test unique**, vérifiée puis supprimée, sans consulter de credential existant. Clé jetable via vrai keytool, zipalign avant apksigner, vérification certificat/alignement ; refus d’écrasement de clé/sortie et de fingerprint incorrect ; clé/APK temporaires supprimés. Le mot de passe de cette clé de test reste uniquement en mémoire ; aucune clé de publication créée.
 
 `tools/sign_release.py` / [SIGNING.md](SIGNING.md) fixent deux identités distinctes APK/index, coffre central Windows, chemins privés hors repo/artifacts, secrets en environnement subprocessus et jamais argv brut/log. `assembleRelease` ne dépend pas du coffre/keyring. P3 doit protéger le dossier privé par ACL et sauvegarder de manière chiffrée avant de créer une identité pérenne.
 
@@ -71,11 +71,12 @@ AVD explicitement jetables, Android API37. Aucun téléphone sélectionné ou re
 - Un premier test instrumentation utilisait un mauvais garde modèle émulateur ; corrigé pour HARDWARE ranchu/goldfish, puis vrai RED fonctionnel obtenu.
 - Le RED canal notification levait une assertion sur le main thread de l’instrumentation, donc « process crashed » dans ce **test**. Crash buffer conservé19, attribution explicite à l’assertion de test ; test ensuite remonté depuis thread runner et vert. Pas présenté comme crash métier corrigé par hasard.
 - Une seconde passe du harness SIGKILL a lu trop tôt le ServiceRecord Android encore marqué foreground, sans PID vivant. Le harness exige désormais un **nouveau PID vivant + état UI actif** ; passe finale complète verte. Aucun délai garanti déduit de cet essai.
+- La vérification finale a révélé un vrai défaut de start/stop rapides : annuler un startForegroundService encore en file par stopService peut laisser un délai de promotion système puis provoquer ForegroundServiceDidNotStartInTimeException. Les traces40/42 sont conservées. Promouvoir seulement à nouveau ne suffisait pas. L’arrêt persiste désormais false et laisse le démarrage en file se promouvoir puis se refuser ; un service observé actif reçoit une commande d’arrêt sérialisée, ignorant un ancien arrêt UI si un nouveau consentement l’a suivi. Régression43 verte après dix cycles et attente6 s, suivie d’une passe lifecycle44 complète. L’intention en attente reste annulable dans l’UI, sans affichage actif inventé ; la sauvegarde automatique de l’interrupteur est désactivée pour ne pas rejouer des callbacks de consentement à la recréation. Le commit intermédiaire f112f6f n’est donc **pas** le candidat final à publier/revoir.
 
 ## Remise P3 / revue Roger
 
 - Commit exact : dans le verdict Kanban et `verification.json` généré après commit ; ne pas prendre le SHA P1 d’une ancienne sortie intermédiaire.
-- APK unsigned durable : `C:/root/AI/chop-torch/artifacts/finish/readiness/ChopTorch-0.6-beta.1-unsigned.apk`, SHA256 **92d06d680d8e391c8c01c4cbfd7e6777d31fd756441005afc86ab59cd2321132**.
+- APK unsigned durable : `C:/root/AI/chop-torch/artifacts/finish/readiness/ChopTorch-0.6-beta.1-unsigned.apk`, SHA256 **d147b0cbb1c4402d54eb8b18ebbc42d287088d9259bb0d857c2f8583375317fc**.
 - Preview durable : même dossier, `ChopTorch-0.6-beta.1-preview.apk`, package `.diagnostic`, ne pas publier.
 - Public : `fr.nauss.choptorch`, version0.6-beta.1/code6/tag prévu v0.6-beta.1, prerelease/bêta honnête. Métadonnées/changelog6 FR/EN + icône + deux captures par langue.
 - Garde : revue Roger sur le commit exact avant toute intégration P2/publication. Après approbation seulement, fast-forward exclusif dans racine propre, push puis relire SHA distant, puis mettre le worktree P3 à cette base. Aucun reset/écrasement. Pas de seconde revue parallèle du même artefact.

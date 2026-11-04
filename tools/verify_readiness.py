@@ -4,6 +4,7 @@
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -20,6 +21,7 @@ NS='{http://schemas.android.com/apk/res/android}'
 def digest(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 def main():
+    assert not subprocess.check_output(['git','status','--porcelain'],cwd=ROOT).strip(), 'Commit clean sources before final evidence'
     OUT.mkdir(parents=True,exist_ok=True)
     classes=verify_finish.engine()
     assert classes==json.loads((PROJECT/'artifacts/finish/design/engine-base.json').read_text())
@@ -46,6 +48,11 @@ def main():
         assert not any(n.endswith(('.jks','.keystore','.p12','.pk8')) for n in archive.namelist())
     debug=ROOT/'app/build/outputs/apk/debug/app-debug.apk'
     assert subprocess.check_output([str(analyzer),'manifest','application-id',str(debug)]).decode().strip()=='fr.nauss.choptorch.diagnostic'
+    signer=['java','-jar',str(Path(os.environ['ANDROID_HOME'])/'build-tools/37.0.0/lib/apksigner.jar'),'verify','--print-certs']
+    debug_certificate=subprocess.check_output(signer+[str(debug)]).decode()
+    old_certificate=subprocess.check_output(signer+[str(PROJECT/'artifacts/lot-b3/delivery-v04/ChopTorch-0.4-diagnostic.apk')]).decode()
+    certificate=lambda text: re.search(r'certificate SHA-256 digest: ([0-9a-f]{64})',text).group(1)
+    assert certificate(debug_certificate)==certificate(old_certificate)
     tests=[ET.parse(p).getroot() for p in (ROOT/'app/build/test-results/testDebugUnitTest').glob('TEST-*.xml')]
     assert tests and all(int(t.get('errors'))==0 and int(t.get('failures'))==0 for t in tests)
     for name in ['lint-results-debug.xml','lint-results-release.xml']:
@@ -76,15 +83,16 @@ def main():
     (OUT/'release-manifest.xml').write_text(text,encoding='utf-8')
     native_checks=json.loads((OUT/'native-final/checks.json').read_text())
     assert len(native_checks)==12
-    instrumentation=(OUT/'21-instrumentation-green.log').read_text()
+    instrumentation=(OUT/'43-stop-instrumentation.log').read_text()
     assert 'PASS fresh/disabled' in instrumentation and 'FAIL' not in instrumentation and 'crashed' not in instrumentation
-    for name in ['32-missing-torch-final.log','34-missing-sensor-final.log']:
+    for name in ['54-missing-torch-final.log','51-missing-sensor-final.log']:
         assert 'PASS real framework missing' in (OUT/name).read_text()
-    assert 'PASS actual keytool + zipalign + apksigner verify' in (OUT/'26-signing-final.log').read_text()
+    assert 'PASS actual keytool + zipalign + apksigner verify' in (OUT/'49-signing-final.log').read_text()
     report={'revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT).decode().strip(),
         'native_lifecycle_checks':native_checks,'native_lifecycle_count':len(native_checks),
         'package':'fr.nauss.choptorch','version':'0.6-beta.1','versionCode':6,'futureTag':'v0.6-beta.1',
         'unsigned_apk':str(destination),'unsigned_sha256':digest(apk),'debug_sha256':digest(debug),
+        'preview_certificate_sha256_unchanged_from_04':certificate(debug_certificate),
         'release_debuggable':False,'permissions':permissions,'jvm_tests':sum(int(t.get('tests')) for t in tests),
         'engine_classes_identical':classes,'wrapper_verified':wrapper,'release_forbidden_dex_tokens_absent':forbidden,
         'public_signing':'NOT PERFORMED; disposable signing self-test is not a release key',
