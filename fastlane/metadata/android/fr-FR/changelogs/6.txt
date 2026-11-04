@@ -1,0 +1,2 @@
+0.6-beta.1 — préparation de la première bêta publique.
+Interface native FR/EN, diagnostics retirés. Consentement conservé, reprise système sticky et au démarrage/mise à jour après premier déverrouillage dans les limites Android. Arrêts et refus respectés. Paquet public séparé des previews debug. Moteur de geste inchangé depuis la 0.4 acceptée. Fiabilité en veille, surcoût batterie et endurance 72 h non mesurés.

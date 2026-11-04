@@ -17,7 +17,7 @@
     <string name="help_gesture_title">Un geste confortable</string>
     <string name="help_gesture">Tenez fermement le téléphone et faites deux mouvements rapides de hachage. Ne le lancez pas et ne forcez pas le geste.</string>
     <string name="help_limits_title">En arrière-plan</string>
-    <string name="help_limits">Une notification silencieuse rend le service visible. « Active » indique que le service fonctionne, pas que la détection en veille profonde est garantie. La fiabilité écran éteint et la consommation restent à mesurer.\n\nPour le moment, réactivez la détection après un arrêt système, un redémarrage ou une mise à jour.</string>
+    <string name="help_limits">Une notification silencieuse rend le service visible. « Active » indique que le service fonctionne, pas que la détection en veille profonde est garantie. La fiabilité écran éteint et la consommation restent à mesurer.\n\nSi activée, Android peut reprendre la détection après perte du processus, redémarrage (après premier déverrouillage) ou mise à jour. Arrêt, arrêt forcé, notifications refusées ou restrictions batterie nécessitent une nouvelle activation. Aucune boucle de relance automatique.</string>
     <string name="battery_default">L’optimisation batterie Android s’applique. Si la détection s’arrête, vérifiez les réglages batterie de l’application. Une exemption est facultative et ne garantit pas la détection en veille.</string>
     <string name="battery_exempt">L’exemption d’optimisation batterie est accordée. Elle ne garantit ni la détection en veille ni une faible consommation.</string>
     <string name="battery_settings">Réglages batterie de l’application</string>
@@ -25,7 +25,7 @@
     <string name="version_license">Version %1$s · GPL-3.0-or-later</string>
     <string name="source">Code source et licence</string>
     <string name="activation_title">Activer la détection ?</string>
-    <string name="activation_message">ChopTorch utilise l’accéléromètre en arrière-plan avec une notification silencieuse. Arrêtez la détection ici ou depuis la notification. La consommation reste à mesurer.</string>
+    <string name="activation_message">ChopTorch utilise l’accéléromètre en arrière-plan avec une notification silencieuse. Votre choix est conservé pour reprendre après perte du processus, redémarrage (après premier déverrouillage) ou mise à jour si Android le permet. Arrêtez ici ou depuis la notification. La consommation reste à mesurer.</string>
     <string name="enable">Activer</string>
     <string name="stop">Arrêter</string>
     <string name="channel_name">Détection du double chop</string>
@@ -33,6 +33,7 @@
     <string name="notification_title">ChopTorch est actif</string>
     <string name="notification_text">Double chop pour allumer ou éteindre la torche.</string>
     <string name="error_start">Android n’a pas pu démarrer la détection. Essayez de l’activer à nouveau.</string>
+    <string name="error_restricted">Android restreint cette application en arrière-plan. Vérifiez ses réglages batterie, puis réactivez la détection.</string>
     <string name="error_command">Réglage non appliqué. Désactivez puis réactivez la détection.</string>
     <string name="error_notifications">Autorisez les notifications pour rendre le service visible, puis réactivez la détection.</string>
     <string name="notification_settings">Autoriser les notifications</string>

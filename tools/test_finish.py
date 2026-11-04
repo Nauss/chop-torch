@@ -29,11 +29,15 @@ class FinishContract(unittest.TestCase):
     def test_minimal_permissions_and_components(self):
         manifest=ET.parse(MAIN/'AndroidManifest.xml').getroot()
         permissions={n.get(ANDROID+'name') for n in manifest.findall('uses-permission')}
-        self.assertEqual({'android.permission.FOREGROUND_SERVICE','android.permission.FOREGROUND_SERVICE_SPECIAL_USE','android.permission.POST_NOTIFICATIONS'},permissions)
+        self.assertEqual({'android.permission.FOREGROUND_SERVICE','android.permission.FOREGROUND_SERVICE_SPECIAL_USE','android.permission.POST_NOTIFICATIONS','android.permission.RECEIVE_BOOT_COMPLETED'},permissions)
         service=manifest.find('application/service')
         self.assertEqual('false',service.get(ANDROID+'exported'))
         self.assertEqual('specialUse',service.get(ANDROID+'foregroundServiceType'))
         self.assertEqual(1,len(manifest.findall('application/activity')))
+        receiver=manifest.find('application/receiver')
+        self.assertEqual('false', receiver.get(ANDROID+'exported'))
+        self.assertEqual({'android.intent.action.BOOT_COMPLETED','android.intent.action.MY_PACKAGE_REPLACED'},
+            {n.get(ANDROID+'name') for n in receiver.findall('intent-filter/action')})
 
     def test_translations_complete_and_no_rendered_literals(self):
         strings=lambda folder: {n.get('name'): ''.join(n.itertext()) for n in ET.parse(MAIN/'res'/folder/'strings.xml').getroot() if n.get('translatable') != 'false'}

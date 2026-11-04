@@ -4,7 +4,7 @@ package fr.nauss.choptorch
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
-import android.app.NotificationManager
+
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -64,8 +64,8 @@ class MainActivity : Activity() {
                         .setPositiveButton(R.string.enable) { _, _ -> requestActivation() }
                         .setNegativeButton(android.R.string.cancel, null).show()
                 } else {
-                    getSharedPreferences("settings", 0).edit().putBoolean("enabled", false).apply()
-                    stopService(Intent(this, ChopService::class.java))
+                    Activation.stop(this)
+                    render()
                 }
             }
         }
@@ -128,10 +128,8 @@ class MainActivity : Activity() {
         LiveState.update { it.copy(error = 0) }
         starting = true
         render()
-        try { startForegroundService(Intent(this, ChopService::class.java)) }
-        catch (_: RuntimeException) {
+        if (!Activation.start(this, userInitiated = true)) {
             starting = false
-            LiveState.update { it.copy(running = false, error = R.string.error_start) }
             render()
         }
     }
@@ -141,13 +139,14 @@ class MainActivity : Activity() {
         if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) startDetection()
         else { notificationDenied = true; render() }
     }
-    private fun notificationsAllowed() = getSystemService(NotificationManager::class.java).areNotificationsEnabled()
+    private fun notificationsAllowed() = Activation.notificationsAllowed(this)
     override fun onResume() {
         super.onResume()
+        Activation.reconcileUserStop(this)
         if (notificationsAllowed()) notificationDenied = false
-        else if (LiveState.state.running) {
+        else if (LiveState.state.running || Activation.enabled(this)) {
             notificationDenied = true
-            stopService(Intent(this, ChopService::class.java))
+            Activation.stop(this)
         }
         LiveState.observe(observer)
         val exempt = getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
@@ -167,6 +166,7 @@ class MainActivity : Activity() {
         })
         detail.setText(when {
             notificationDenied -> R.string.error_notifications
+            Activation.blockedReason(this) == R.string.error_restricted -> R.string.error_restricted
             state.error != 0 -> state.error
             state.running -> state.torch
             else -> R.string.state_off_hint

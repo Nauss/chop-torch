@@ -2,13 +2,17 @@
 
 Application native Kotlin + Android Views pour Android 17 (API **37**). Deux mouvements de hachage consécutifs allument ou éteignent la torche. Aucun lien avec Motorola, aucune reprise d’algorithme propriétaire.
 
-## État au 4 novembre 2026 — finition P1
+## État au 4 novembre 2026 — préparation P2 / bêta initiale
+
+**0.6-beta.1 / code6**, futur tag unique `v0.6-beta.1`. Paquet public **fr.nauss.choptorch**, release non debuggable, sans diagnostics et sans signature locale requise au build. Preview debug distincte **fr.nauss.choptorch.diagnostic**. Le public s’installe à côté et démarre désactivé : **arrêter l’ancien détecteur avant d’activer le nouveau**, sans désinstallation ni migration silencieuse des préférences privées. Les étapes suivantes décrivant P1/anciens lots sont historiques.
+
+P2 ajoute consentement persistant séparé de l’état observé, reprise système sticky et receiver privé boot/update après premier déverrouillage, dans les limites Android. Stops, force-stop et restrictions respectés. Tests Android réels sur AVD jetables, pas une recette physique de veille/autonomie. Voir [rapport P2](docs/FINISH_P2.md) et [signature sûre](docs/SIGNING.md).
 
 Le propriétaire a installé et essayé la **0.4**, puis accepté le geste : « C’est plutôt bien ! […] on est bon ». Cette acceptation ne mesure ni la réception en veille profonde, ni l’autonomie, ni l’endurance. Le moteur validé reste inchangé dans ce lot.
 
 La **0.5-ui-preview / code 5** apporte un seul écran natif FR/EN, les thèmes clair et graphite suivant le système, un interrupteur de détection, l’état observé du service et de la torche, le curseur 0–100 et une aide progressive. Capture, export, inventaire, journal, compteurs et commande de test torche sont **retirés de l’APK**, pas seulement masqués. Les tests et outils de replay restent hors APK. Voir [DESIGN.md](DESIGN.md) et [rapport de finition](docs/FINISH_P1.md).
 
-Prévisualisation uniquement : identifiant `fr.nauss.choptorch.diagnostic` conservé, signature de développement ; **pas la version publique finale**. Pas de release GitHub ni de publication F-Droid dans P1. La reprise du service et la préparation du paquet public relèvent de P2 ; la signature pérenne et la publication relèvent de P3, après revue indépendante et intégration.
+La preview P1 historique n’est pas la version publique finale. **Signature pérenne, release GitHub et dépôt F-Droid personnel restent réservés à P3**, après revue indépendante du commit exact et intégration vérifiée. Aucune acceptation au catalogue officiel F-Droid n’est annoncée. Métadonnées FR/EN dans `fastlane/metadata/android`.
 
 ## Historique diagnostic 0.4 — lot B3, avant le retour utilisateur
 
@@ -61,7 +65,9 @@ Prérequis : JDK 21, Android SDK Platform **37.0** (révision 2 utilisée), Buil
 # Windows sans bash : gradlew.bat avec les mêmes arguments
 ```
 
-APK : `app/build/outputs/apk/debug/app-debug.apk`. Le keystore debug Android normal demeure hors dépôt, dans le profil utilisateur. **Ne commitez aucune clé.** Le checksum officiel de la distribution Gradle est fixé dans le wrapper ; son JAR a été comparé au checksum publié par Gradle. Lint traite les avertissements en erreurs, sauf la simple suggestion de mise à jour des versions (`AndroidGradlePluginVersion`) : la compatibilité de cette chaîne est documentée et ses mises à jour doivent être revues, pas appliquées automatiquement.
+APK preview : `app/build/outputs/apk/debug/app-debug.apk`. Release publique **non signée** : `app/build/outputs/apk/release/app-release-unsigned.apk`. `assembleRelease` fonctionne sans coffre, keyring, keystore ni configuration de signature privée, pour F-Droid source. Aucun APK unsigned/debug ne doit être diffusé comme public. Le keystore debug reste hors dépôt. **Ne commitez aucune clé.** Wrapper JAR et distribution contrôlés contre les checksums officiels. Lint traite les avertissements en erreurs, sauf suggestion de mise à jour AGP à revoir explicitement. Aucune date aléatoire injectée en ressources ; égalité de builds locaux n’est pas preuve de reproductibilité intermachines/F-Droid.
+
+Tests outils : `python -m unittest discover -s tools -p 'test_*.py'`. Après publication seulement, installer l’APK public signé depuis les [releases](https://github.com/Nauss/chop-torch/releases) et vérifier hash/certificat annoncés. Le lien et l’empreinte du dépôt F-Droid personnel seront communiqués après déploiement vérifié, pas inventés ici.
 
 ```sh
 # Après commit, sur arbre propre : figer APK, preuves et source exactes
@@ -81,7 +87,7 @@ Le geste 0.4 est accepté ; aucune nouvelle capture n’est demandée pour P1. L
 
 L’aide affiche l’état observé de l’exemption batterie et ouvre volontairement la fiche de cette application. Aucune exemption n’est imposée, aucune économie globale désactivée, aucun export proposé.
 
-**P1 conserve la réactivation manuelle** après arrêt Android, force-stop, mort du processus, redémarrage ou mise à jour ; pas encore de receiver boot ni de reprise automatique. Retirer l’activité des récents ne demande pas l’arrêt du service (`stopWithTask=false`), sans garantie de veille. La préférence de sensibilité et la dernière activation sont enregistrées ; l’état « actif » n’est jamais déduit de cette préférence. La désactivation et le bouton Arrêter de la notification libèrent le capteur et demandent l’extinction de la torche si ChopTorch l’a allumée. La confirmation finale d’extinction après arrêt n’est pas garantie si la ressource est retirée ; Android arrête aussi la torche à la mort du client.
+**P2 reprend uniquement une intention activée valide** : `START_STICKY` laisse Android recréer le service après mort du processus ; un receiver privé accepte boot/remplacement du paquet. Boot après premier déverrouillage, sans Direct Boot ni délai garanti. Désactivation, bouton Arrêter, arrêt via Applications actives et force-stop sont respectés. Notifications refusées/canal bloqué, restrictions d’arrière-plan et matériel manquant empêchent le démarrage ; nouvelle activation requise. Aucun polling, alarme, job de maintien ni wake lock permanent. Retirer l’activité des récents ne demande pas l’arrêt (`stopWithTask=false`). État actif jamais déduit de la préférence. Arrêter libère capteur/callback et demande l’extinction si l’app a allumé la torche ; confirmation impossible si la ressource est retirée. Android arrête aussi la torche à la mort du client.
 
 Le détecteur utilise un filtre gravité unique, trois échelles de segmentation fixes,
 une chauffe500 ms, deux coups accélération/freinage soutenus au moins40 ms chacun,
@@ -96,11 +102,11 @@ modification de seuil n’appartient à P1. Les tests ne mesurent pas les faux p
 
 ## Confidentialité
 
-Les événements sont traités en mémoire par le détecteur, jamais enregistrés ni exportés. Aucun tampon de capture, inventaire matériel exportable, journal diagnostic ou accès au stockage partagé n’est inclus. Seules la sensibilité et l’intention d’activation sont conservées localement. Aucun réseau, analytics, publicité, compte ou service distant. Le lien du code source ouvre un navigateur externe uniquement sur action de l’utilisateur ; ChopTorch ne déclare pas `INTERNET`. Les anciennes captures privées restent locales, ignorées par Git, immuables et utilisées uniquement par les outils développeur hors APK.
+Les événements sont traités en mémoire, jamais enregistrés ni exportés. Aucun tampon de capture, inventaire exportable, journal ou stockage partagé. Seules sensibilité, intention d’activation et date locale de son changement sont conservées, sans sauvegarde Android. L’historique système des sorties de ce processus est consulté localement pour respecter un arrêt utilisateur, jamais exporté. Aucun réseau, analytics, publicité, compte, son ou haptique. Le lien source ouvre le navigateur externe sur action utilisateur ; `INTERNET` absent. Anciennes captures privées locales, ignorées Git, immuables, réservées aux outils hors APK.
 
 ## Suite du produit (non livrée dans ce lot)
 
-Reprise lifecycle et paquet public (P2), puis signature pérenne, GitHub release, canal F-Droid personnel et candidature officielle distincte (P3). Premier geste après veille profonde, comparaison énergie sur 24 h et endurance 72 h restent à mesurer. Le capteur Pixel observé est non-wake-up : la réception fiable en suspension n’est pas assurée. Ni la très faible consommation, ni le fonctionnement permanent, ni l’acceptation F-Droid ne sont promis par ce build.
+P2 prépare lifecycle et paquet public ; P3 réalisera signature pérenne, GitHub release, canal F-Droid personnel et candidature officielle distincte. Premier geste après veille profonde, comparaison énergie24 h et endurance72 h restent à mesurer. Capteur Pixel non-wake-up : réception fiable en suspension non assurée. Ni très faible consommation, ni fonctionnement permanent, ni acceptation F-Droid promis. Les tests AVD (processus, reboot, update, permissions/arrêts et matériel absent) ne remplacent pas ces mesures ; aucun réglage/redémarrage du téléphone personnel n’est automatisé.
 
 ## Licence
 
@@ -108,4 +114,4 @@ Copyright (C) 2026 Nauss et contributeurs. **GPL-3.0-or-later** : redistribution
 
 ## English summary
 
-Native Kotlin / Android Views flashlight for Android 17 (API 37 only). The owner accepted the 0.4 gesture; the detector is unchanged. P1 adds a restrained FR/EN screen, system-following light/dark themes, observed service/flashlight states, sensitivity and progressive help. All capture/export/test-torch commands and raw diagnostic logging are removed from the APK. No network, audio, ads, analytics or Play Services. Version 0.5-ui-preview still uses the diagnostic application ID and development signature, not the final public package. Manual restart remains required after process death, reboot, update or system stop until P2. Screen-off reliability, energy and 72-hour endurance remain unmeasured. GitHub release and F-Droid publication are reserved for P3 after review. GPL-3.0-or-later; not affiliated with Motorola.
+Native Kotlin / Android Views flashlight for **API37 only**. Accepted 0.4 detector unchanged. Native FR/EN UI, system light/dark themes, observed states, sensitivity/help. No capture/export/test commands, network, audio, haptics, ads, analytics or Play Services. **0.6-beta.1/code6** prepares initial public `fr.nauss.choptorch`, non-debug release; `.diagnostic` debug remains separate. They install side by side without preference migration: stop the older detector first; fresh public installs off. Saved consent permits Android sticky process recovery and private boot/update recovery after first unlock, within system limits. Stops, Task Manager Stop, force-stop, notification/channel denial and background restrictions respected. No retry loops/keepalive jobs/permanent wake locks. Service alive is not sensor delivery during suspend. Sleep reliability, energy and 72-hour endurance unmeasured. Unsigned release builds need no credentials; signing and GitHub/F-Droid publication await independent exact-commit review/landing in P3, no official acceptance claimed. GPL-3.0-or-later; no Motorola affiliation.

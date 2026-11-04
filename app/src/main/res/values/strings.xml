@@ -18,7 +18,7 @@
     <string name="help_gesture_title">A comfortable gesture</string>
     <string name="help_gesture">Hold your phone firmly and make two quick chopping motions. Never throw it or force the movement.</string>
     <string name="help_limits_title">In the background</string>
-    <string name="help_limits">A silent notification keeps the service visible. “Active” means the service is running, not that detection during deep sleep is guaranteed. Screen-off reliability and battery use have not been measured.\n\nFor now, enable detection again after a system stop, restart or update.</string>
+    <string name="help_limits">A silent notification keeps the service visible. “Active” means the service is running, not that detection during deep sleep is guaranteed. Screen-off reliability and battery use have not been measured.\n\nIf enabled, Android may restore detection after process loss, restart (after first unlock) or update. Stop, force-stop, denied notifications or battery restrictions require enabling again. No automatic retry loop.</string>
     <string name="battery_default">Android battery optimization applies. If detection stops, check this app’s battery settings. An exemption is optional and does not guarantee detection during sleep.</string>
     <string name="battery_exempt">Battery optimization exemption is enabled. This does not guarantee detection during sleep or low battery use.</string>
     <string name="battery_settings">App battery settings</string>
@@ -26,7 +26,7 @@
     <string name="version_license">Version %1$s · GPL-3.0-or-later</string>
     <string name="source">Source code and license</string>
     <string name="activation_title">Enable detection?</string>
-    <string name="activation_message">ChopTorch uses the accelerometer in the background with a silent notification. Stop detection here or from the notification. Battery use has not been measured.</string>
+    <string name="activation_message">ChopTorch uses the accelerometer in the background with a silent notification. Your choice is saved for recovery after process loss, restart (after first unlock) or update when Android allows it. Stop here or from the notification. Battery use has not been measured.</string>
     <string name="enable">Enable</string>
     <string name="stop">Stop</string>
     <string name="channel_name">Double chop detection</string>
@@ -34,6 +34,7 @@
     <string name="notification_title">ChopTorch is active</string>
     <string name="notification_text">Double chop to turn the flashlight on or off.</string>
     <string name="error_start">Android could not start detection. Try enabling it again.</string>
+    <string name="error_restricted">Android restricts this app in the background. Check its battery settings, then enable detection again.</string>
     <string name="error_command">Setting not applied. Disable and enable detection again.</string>
     <string name="error_notifications">Allow notifications to keep the background service visible, then enable detection again.</string>
     <string name="notification_settings">Allow notifications</string>

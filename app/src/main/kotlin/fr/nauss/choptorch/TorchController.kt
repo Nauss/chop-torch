@@ -8,7 +8,8 @@ import android.hardware.camera2.CameraManager
 import android.os.Handler
 
 /** Uses only torch APIs, never opens a camera. Serialized on the sensor worker. */
-class TorchController(context: Context, private val handler: Handler) {
+class TorchController(context: Context, private val handler: Handler,
+    private val reportState: (Int) -> Unit = { message -> LiveState.update { it.copy(torch=message) } }) {
     private val manager=context.getSystemService(CameraManager::class.java)
     private var id: String? = null
     private var observed: Boolean? = null
@@ -32,8 +33,8 @@ class TorchController(context: Context, private val handler: Handler) {
             report(R.string.torch_unavailable)
         }
     }
-    private fun report(message: Int) { LiveState.update { it.copy(torch=message) } }
-    fun open() {
+    private fun report(message: Int) { reportState(message) }
+    fun open(): Int {
         try {
             val cameras=manager.cameraIdList.toList()
             id=cameras.firstOrNull {
@@ -41,11 +42,12 @@ class TorchController(context: Context, private val handler: Handler) {
                 c.get(CameraCharacteristics.FLASH_INFO_AVAILABLE)==true &&
                     c.get(CameraCharacteristics.LENS_FACING)==CameraCharacteristics.LENS_FACING_BACK
             } ?: cameras.firstOrNull { manager.getCameraCharacteristics(it).get(CameraCharacteristics.FLASH_INFO_AVAILABLE)==true }
-            if(id==null) { report(R.string.torch_missing); return }
+            if(id==null) { report(R.string.torch_missing); return R.string.torch_missing }
             manager.registerTorchCallback(callback,handler); registered=true
-        } catch(_: CameraAccessException) { report(R.string.torch_unavailable) }
-          catch(_: SecurityException) { report(R.string.torch_denied) }
-          catch(_: IllegalArgumentException) { report(R.string.torch_missing) }
+            return 0
+        } catch(_: CameraAccessException) { report(R.string.torch_unavailable); return R.string.torch_unavailable }
+          catch(_: SecurityException) { report(R.string.torch_denied); return R.string.torch_denied }
+          catch(_: IllegalArgumentException) { report(R.string.torch_missing); return R.string.torch_missing }
     }
     fun toggle() {
         val camera=id ?: return

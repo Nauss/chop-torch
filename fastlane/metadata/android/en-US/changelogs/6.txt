@@ -1,0 +1,2 @@
+0.6-beta.1 — initial public beta preparation.
+Native FR/EN interface; diagnostics removed. Saved consent, system sticky recovery and boot/update recovery after first unlock, within Android limits. Stop and permission restrictions respected. Public package separated from debug previews. Gesture engine unchanged from accepted 0.4. Sleep reliability, battery overhead and 72-hour endurance remain unmeasured.

@@ -7,6 +7,10 @@ artifacts/
 local.properties
 *.jks
 *.keystore
+*.p12
+*.pfx
+*.pk8
+*.idsig
 *.apk
 *.apksig
 captures/

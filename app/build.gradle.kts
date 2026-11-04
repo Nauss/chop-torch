@@ -4,11 +4,16 @@ android {
     compileSdk = 37
     buildToolsVersion = "37.0.0"
     defaultConfig {
-        applicationId = "fr.nauss.choptorch.diagnostic"
+        testInstrumentationRunner = "fr.nauss.choptorch.LifecycleInstrumentation"
+        applicationId = "fr.nauss.choptorch"
         minSdk = 37
         targetSdk = 37
-        versionCode = 5
-        versionName = "0.5-ui-preview"
+        versionCode = 6
+        versionName = "0.6-beta.1"
+    }
+    buildTypes {
+        debug { applicationIdSuffix = ".diagnostic" }
+        release { isDebuggable = false }
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     lint {

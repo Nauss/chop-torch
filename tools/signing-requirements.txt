@@ -1,0 +1,7 @@
+# Isolated Windows signing toolchain; not a Gradle or application dependency.
+keyring==25.7.0
+jaraco.classes==3.4.0
+jaraco.context==6.1.2
+jaraco.functools==4.6.0
+more-itertools==11.2.1
+pywin32-ctypes==0.2.3
