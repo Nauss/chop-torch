@@ -1,0 +1,35 @@
+Categories:
+  - System
+License: GPL-3.0-or-later
+AuthorName: Nauss
+WebSite: https://github.com/Nauss/chop-torch
+SourceCode: https://github.com/Nauss/chop-torch
+IssueTracker: https://github.com/Nauss/chop-torch/issues
+Changelog: https://github.com/Nauss/chop-torch/releases
+
+AutoName: ChopTorch
+Summary: Toggle the flashlight with two consecutive chopping gestures
+Description: |-
+    Native offline flashlight for Android 17 (API 37).
+    Initial beta: sleep reliability, battery cost and 72-hour endurance have not
+    been measured. No network permission, analytics, capture or export.
+    Stop any older diagnostic detector before enabling this public package.
+
+RepoType: git
+Repo: https://github.com/Nauss/chop-torch.git
+Binaries: https://github.com/Nauss/chop-torch/releases/download/v%v/ChopTorch-%v.apk
+
+Builds:
+  - versionName: 0.6-beta.1
+    versionCode: 6
+    commit: 75319a44ab4f268239ab7dd3c8170a49e1f70c37
+    subdir: app
+    gradle:
+      - yes
+
+AllowedAPKSigningKeys: 6e1edeeb4e4a610a0430c9287cc274af9dd7388f9d6ab7b891b5c61568fe2d3f
+
+AutoUpdateMode: None
+UpdateCheckMode: None
+CurrentVersion: 0.6-beta.1
+CurrentVersionCode: 6
