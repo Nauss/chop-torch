@@ -1,0 +1,38 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/safe_area" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:clipToPadding="true">
+        <Toolbar android:id="@+id/help_toolbar" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:minHeight="64dp" android:background="@color/surface" android:title="@string/help_open"
+            android:titleTextAppearance="@style/Type.Title" android:navigationIcon="@drawable/ic_back"
+            android:navigationContentDescription="@string/back" />
+        <ScrollView android:id="@+id/help_scroll" android:layout_width="match_parent" android:layout_height="0dp"
+            android:layout_weight="1" android:fillViewport="true">
+            <LinearLayout android:id="@+id/help_content" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal" android:orientation="vertical" android:padding="24dp">
+            <TextView style="@style/Type.Body" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/intro" />
+            <TextView style="@style/Type.Title" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="24dp" android:text="@string/help_gesture_title" android:accessibilityHeading="true" />
+            <TextView style="@style/Type.Body" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:text="@string/help_gesture" />
+            <TextView style="@style/Type.Title" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="24dp" android:text="@string/help_limits_title" android:accessibilityHeading="true" />
+            <TextView style="@style/Type.Body" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:text="@string/help_limits" />
+            <TextView android:id="@+id/battery_info" style="@style/Type.Body" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="16dp" />
+            <Button android:id="@+id/battery_settings" style="@style/Action.Text" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/battery_settings" />
+            <TextView style="@style/Type.Body" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="24dp" android:text="@string/privacy" />
+            <TextView android:id="@+id/version" style="@style/Type.Label" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="16dp" />
+            <Button android:id="@+id/source" style="@style/Action.Text" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/source" />
+            <TextView android:id="@+id/font_credit" style="@style/Type.Body" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="24dp" android:text="@string/font_credit" />
+            <TextView android:id="@+id/font_license" style="@style/Type.Label" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="16dp" />
+            </LinearLayout>
+        </ScrollView>
+</LinearLayout>

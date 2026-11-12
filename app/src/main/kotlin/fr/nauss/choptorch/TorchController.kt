@@ -9,6 +9,7 @@ import android.os.Handler
 
 /** Uses only torch APIs, never opens a camera. Serialized on the sensor worker. */
 class TorchController(context: Context, private val handler: Handler,
+    private val onConfirmed: () -> Unit = {},
     private val reportState: (Int) -> Unit = { message -> LiveState.update { it.copy(torch=message) } }) {
     private val manager=context.getSystemService(CameraManager::class.java)
     private var id: String? = null
@@ -16,20 +17,27 @@ class TorchController(context: Context, private val handler: Handler,
     private var pending = false
     private var owned = false
     private var registered = false
+    private val confirmation=TorchConfirmation()
     private val timeout=Runnable {
         pending=false
+        confirmation.cancel()
         report(R.string.torch_unconfirmed)
     }
     private val callback=object: CameraManager.TorchCallback() {
         override fun onTorchModeChanged(cameraId: String, enabled: Boolean) {
             if(!registered || cameraId!=id) return
+            // A queued duplicate must not end the request or remove its timeout.
+            if(observed==enabled) return
+            val confirmed=confirmation.confirmed(observed,enabled)
             observed=enabled; pending=false; handler.removeCallbacks(timeout)
             if(!enabled) owned=false
             report(if(enabled) R.string.torch_on else R.string.torch_off)
+            if(confirmed) onConfirmed()
         }
         override fun onTorchModeUnavailable(cameraId: String) {
             if(!registered || cameraId!=id) return
             observed=null; pending=false; owned=false; handler.removeCallbacks(timeout)
+            confirmation.cancel()
             report(R.string.torch_unavailable)
         }
     }
@@ -55,16 +63,18 @@ class TorchController(context: Context, private val handler: Handler,
         if(current==null || pending) return
         try {
             pending=true
+            confirmation.requested(!current)
             manager.setTorchMode(camera,!current)
             owned=!current
             handler.postDelayed(timeout,2000)
             // Do not change observed state until TorchCallback.
-        } catch(_: CameraAccessException) { pending=false; report(R.string.torch_unavailable) }
-          catch(_: SecurityException) { pending=false; observed=null; report(R.string.torch_denied) }
-          catch(_: IllegalArgumentException) { pending=false; observed=null; report(R.string.torch_missing) }
+        } catch(_: CameraAccessException) { pending=false; confirmation.cancel(); report(R.string.torch_unavailable) }
+          catch(_: SecurityException) { pending=false; observed=null; confirmation.cancel(); report(R.string.torch_denied) }
+          catch(_: IllegalArgumentException) { pending=false; observed=null; confirmation.cancel(); report(R.string.torch_missing) }
     }
     fun close() {
         handler.removeCallbacks(timeout)
+        confirmation.cancel()
         var result=R.string.torch_unknown
         if(owned) {
             try { id?.let { manager.setTorchMode(it,false) } }

@@ -10,20 +10,19 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
-import android.os.PowerManager
+
 import android.provider.Settings
 import android.view.View
 import android.view.WindowInsets
 import android.widget.*
 
-/** One native screen. System controls retain keyboard and TalkBack behavior. */
+/** Native poster and quiet controls. Activation behavior is independent of navigation. */
 class MainActivity : Activity() {
     private lateinit var activation: Switch
     private lateinit var stateText: TextView
     private lateinit var detail: TextView
     private lateinit var recovery: Button
-    private lateinit var help: View
-    private lateinit var helpButton: Button
+    private lateinit var torchState: TextView
     private var rendering = false
     private var notificationDenied = false
     private var starting = false
@@ -52,11 +51,17 @@ class MainActivity : Activity() {
         stateText = findViewById(R.id.state)
         detail = findViewById(R.id.detail)
         recovery = findViewById(R.id.recovery)
-        help = findViewById(R.id.help)
-        helpButton = findViewById(R.id.help_button)
+        torchState = findViewById(R.id.torch_state)
         notificationDenied = savedInstanceState?.getBoolean("notificationDenied") ?: false
-        setHelpExpanded(savedInstanceState?.getBoolean("helpExpanded") ?: false)
-        helpButton.setOnClickListener { setHelpExpanded(help.visibility != View.VISIBLE) }
+        findViewById<ImageButton>(R.id.help_button).setOnClickListener {
+            startActivity(Intent(this, HelpActivity::class.java))
+        }
+        // At large font sizes the illustration takes its own row, never the text's space.
+        if (resources.configuration.fontScale >= 1.5f || resources.configuration.screenWidthDp < 360) {
+            findViewById<LinearLayout>(R.id.hero).orientation = LinearLayout.VERTICAL
+            findViewById<TextView>(R.id.hero_title).layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        }
         activation.setOnCheckedChangeListener { _, checked ->
             if (!rendering) {
                 if (checked) {
@@ -98,24 +103,13 @@ class MainActivity : Activity() {
             override fun onStartTrackingTouch(bar: SeekBar) = Unit
             override fun onStopTrackingTouch(bar: SeekBar) = Unit
         })
-        val version = packageManager.getPackageInfo(packageName, 0).versionName.orEmpty()
-        findViewById<TextView>(R.id.version).text = getString(R.string.version_license, version)
-        findViewById<Button>(R.id.source).setOnClickListener {
-            open(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Nauss/chop-torch")))
-        }
-        findViewById<Button>(R.id.battery_settings).setOnClickListener {
-            open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
-        }
+
     }
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
-    private fun setHelpExpanded(expanded: Boolean) {
-        help.visibility = if (expanded) View.VISIBLE else View.GONE
-        helpButton.setText(if (expanded) R.string.help_close else R.string.help_open)
-        helpButton.stateDescription = getString(if (expanded) R.string.expanded else R.string.collapsed)
-    }
+
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putBoolean("helpExpanded", help.visibility == View.VISIBLE)
+
         outState.putBoolean("notificationDenied", notificationDenied)
         super.onSaveInstanceState(outState)
     }
@@ -152,12 +146,12 @@ class MainActivity : Activity() {
             Activation.stop(this)
         }
         LiveState.observe(observer)
-        val exempt = getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
-        findViewById<TextView>(R.id.battery_info).setText(if (exempt) R.string.battery_exempt else R.string.battery_default)
+
     }
     override fun onPause() { LiveState.remove(observer); super.onPause() }
     private fun render() {
         val state = LiveState.state
+        torchState.setText(state.torch)
         rendering = true
         // The switch controls saved consent; the label below remains observed truth.
         // Keep cancellation available even while Android recovery/start is pending.
@@ -169,14 +163,19 @@ class MainActivity : Activity() {
             state.running -> R.string.state_active
             else -> R.string.state_off
         })
-        detail.setText(when {
+        val detailMessage = when {
             notificationDenied -> R.string.error_notifications
             Activation.blockedReason(this) == R.string.error_restricted -> R.string.error_restricted
             state.error != 0 -> state.error
-            state.running -> state.torch
+            state.running && state.context != 0 -> state.context
+            state.running -> 0
             Activation.enabled(this) -> R.string.state_pending_hint
             else -> R.string.state_off_hint
-        })
+        }
+        // The separate live row owns torch state, including torch-specific errors.
+        val showDetail = detailMessage != 0 && detailMessage != state.torch
+        detail.visibility = if (showDetail) View.VISIBLE else View.GONE
+        if (showDetail) detail.setText(detailMessage) else detail.text = ""
         recovery.visibility = if (notificationDenied) View.VISIBLE else View.GONE
     }
     private fun open(intent: Intent) {

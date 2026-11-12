@@ -44,7 +44,7 @@ class ReplayToolTest(unittest.TestCase):
         self.assertEqual(0, computed.returncode, computed.stderr)
         self.assertEqual(3, recorded.stdout.count('admissionRejected=0 freshnessDisagreements=1'))
         self.assertEqual(3, computed.stdout.count('admissionRejected=1 freshnessDisagreements=1'))
-        self.assertIn('PRODUCTION_EVENTS_AGGREGATED_3_SCALES', computed.stdout)
+        self.assertIn('LEGACY_COMPARATOR_EVENTS_AGGREGATED_SCALES_BY_SETTING=0:4,50:7,100:8', computed.stdout)
 
     def test_auto_uses_v2_recorded_mask_including_rejected_samples(self):
         data = self.fixture()

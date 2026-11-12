@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Privacy policy for ChopTorch, an offline Android flashlight app.">
+  <title>ChopTorch Privacy Policy</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { max-width: 48rem; margin: 3rem auto; padding: 0 1.25rem; font: 1rem/1.7 system-ui, sans-serif; color: CanvasText; background: Canvas; }
+    h1 { line-height: 1.2; font-size: clamp(2rem, 5vw, 3rem); }
+    h2 { margin-top: 2rem; line-height: 1.3; }
+    a { overflow-wrap: anywhere; }
+    code { overflow-wrap: anywhere; }
+    .summary { padding: 1rem 1.25rem; border: 1px solid GrayText; border-radius: .5rem; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid GrayText; }
+  </style>
+</head>
+<body>
+  <header>
+    <p><a href="./">ChopTorch</a></p>
+    <h1>ChopTorch Privacy Policy</h1>
+    <p>Last updated: <time datetime="2026-11-12">November 12, 2026</time></p>
+    <p>This policy covers the ChopTorch Android application, package <code>fr.nauss.choptorch</code>, maintained by Nauss.</p>
+  </header>
+  <main>
+    <p class="summary">ChopTorch processes gestures on your device. The app has no network permission, accounts, advertising or analytics. It does not send motion readings or settings to the developer or to third parties.</p>
+
+    <h2>Information processed on your device</h2>
+    <p>While you have enabled detection, ChopTorch processes linear-acceleration and proximity readings in memory to recognize double-chop gestures and pause detection when the top of the phone is covered. Readings are not saved to files, exported or transmitted. They are not used to build a personal calibration profile.</p>
+    <p>The app uses Android's flashlight APIs to control the torch. It does not capture photographs, video or audio, and does not request camera or microphone permission.</p>
+
+    <h2>Local settings, retention and deletion</h2>
+    <p>Your sensitivity and detection-enabled preference are stored in the app's private Android storage. They remain there until you clear ChopTorch's app storage or uninstall it. These local settings are excluded from Android backup and device-transfer rules.</p>
+    <p>Gesture history is temporary in-memory state, not a recording. Stopping detection releases the sensor listeners. There is no ChopTorch account, remote user database or account-deletion service.</p>
+
+    <h2>Permissions and background operation</h2>
+    <ul>
+      <li><strong>Foreground service and notifications:</strong> keep user-enabled gesture detection available when the app is not visible, show its status and provide a Stop action.</li>
+      <li><strong>Vibration:</strong> acknowledge confirmed flashlight changes on compatible hardware.</li>
+      <li><strong>Boot completion:</strong> allow Android to restore detection after reboot when you previously enabled it, subject to system restrictions.</li>
+    </ul>
+    <p>You can stop detection from the app or its notification. ChopTorch does not use a permanent CPU wake lock; a running service does not guarantee sensor delivery during deep sleep.</p>
+
+    <h2>Sharing and third-party services</h2>
+    <p>The app does not collect data off your device, sell data, or integrate advertising, tracking or analytics SDKs. It does not require Google Play Services.</p>
+    <p>Android, your app store, and any browser you use to open external links may process information separately under their own privacy policies. This page is hosted on GitHub Pages; viewing it is a browser request to that service, not a network request made by ChopTorch.</p>
+
+    <h2>Support and privacy questions</h2>
+    <p>Contact <a href="mailto:bpommier+choptorch@gmail.com">bpommier+choptorch@gmail.com</a> for support or privacy questions.</p>
+    <p>If you email support, the information you choose to include is separate from the app's on-device processing. Support correspondence is used to respond to your request. Please do not include sensitive personal information. You can use the same address to ask about information you have provided by email.</p>
+
+    <h2>Changes to this policy</h2>
+    <p>Updates will be published on this page with a revised date. Any change in the app's data handling must also be reflected in its disclosures.</p>
+  </main>
+  <footer>
+    <a href="https://github.com/Nauss/chop-torch">Source code and GPL-3.0-or-later license</a>
+  </footer>
+</body>
+</html>

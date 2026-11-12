@@ -8,8 +8,8 @@ android {
         applicationId = "fr.nauss.choptorch"
         minSdk = 37
         targetSdk = 37
-        versionCode = 6
-        versionName = "0.6-beta.1"
+        versionCode = 16
+        versionName = "0.13-beta.1"
     }
     buildTypes {
         debug { applicationIdSuffix = ".diagnostic" }

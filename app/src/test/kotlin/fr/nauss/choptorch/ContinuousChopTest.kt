@@ -129,7 +129,8 @@ class ContinuousChopTest {
     @Test fun sensitivityKeepsSustainedAndTimingGuards() {
         for (s in listOf(0, 50, 100)) {
             val weak = Trace(s); weak.warm(); weak.stroke(amplitude = 12.0); weak.stroke(amplitude = 12.0)
-            assertEquals("s=$s", if (s == 100) 1 else 0, weak.hits)
+            // Recalibration intentionally admits this amplitude at the midpoint too.
+            assertEquals("s=$s", if (s == 0) 0 else 1, weak.hits)
             val fast = Trace(s); fast.warm()
             fast.advance(500) { ms -> doubleArrayOf(28.0 * sin(Math.PI * ms / 24.0), 0.0, 0.0) }
             assertEquals(0, fast.hits)

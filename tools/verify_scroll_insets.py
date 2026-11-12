@@ -9,7 +9,8 @@ PKG = 'fr.nauss.choptorch.diagnostic'
 
 def bounds(value):
     result = tuple(map(int, re.findall(r'-?\d+', value)))
-    assert len(result) == 4, value
+    if len(result) != 4:
+        raise AssertionError(value)
     return result
 
 
@@ -31,15 +32,17 @@ def assert_safe_viewport(root, windows):
         if 'isVisible=true' not in block:
             continue
         match = re.search(r'Frames:.*? frame=(\[-?\d+,-?\d+\]\[-?\d+,-?\d+\])', block)
-        assert match, 'Missing visible system bar frame'
+        if not match:
+            raise AssertionError('Missing visible system bar frame')
         bars.append(bounds(match.group(1)))
-    assert len(bars) >= 2, 'Expected visible status and navigation bars'
+    if len(bars) < 2:
+        raise AssertionError('Expected visible status and navigation bars')
     scroll = next(n for n in root.iter('node') if n.get('resource-id') == PKG + ':id/scroll')
     viewport = bounds(scroll.get('bounds'))
     for node in scroll.iter('node'):
         rect = bounds(node.get('bounds'))
-        assert not any(intersects(rect, bar) for bar in bars), (
-            'Scrolled UI overlaps system bar', node.get('text'), rect, bars)
+        if any(intersects(rect, bar) for bar in bars):
+            raise AssertionError(('Scrolled UI overlaps system bar', node.get('text'), rect, bars))
     return {'viewport': viewport, 'system_bars': bars}
 
 

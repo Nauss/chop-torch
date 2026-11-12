@@ -1,25 +1,25 @@
 <resources>
-    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:fontFamily">sans</item>
+    <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">@font/barlow_regular</item>
         <item name="android:windowBackground">@color/surface</item>
         <item name="android:colorBackground">@color/surface</item>
         <item name="android:textColorPrimary">@color/on_surface</item>
         <item name="android:textColorSecondary">@color/on_surface_variant</item>
         <item name="android:colorAccent">@color/primary</item>
         <item name="android:colorControlNormal">@color/control_normal</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:forceDarkAllowed">false</item>
     </style>
     <style name="Type.Headline" parent="android:style/TextAppearance.Material.Headline">
         <item name="android:textSize">28sp</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:fontFamily">@font/barlow_semibold</item>
         <item name="android:textColor">@color/on_surface</item>
     </style>
     <style name="Type.Title" parent="android:style/TextAppearance.Material.Title">
         <item name="android:textSize">20sp</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:fontFamily">@font/barlow_medium</item>
         <item name="android:textColor">@color/on_surface</item>
     </style>
     <style name="Type.Body" parent="android:style/TextAppearance.Material.Body1">
@@ -28,12 +28,22 @@
         <item name="android:textColor">@color/on_surface_variant</item>
     </style>
     <style name="Type.Body.Emphasis">
-        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:fontFamily">@font/barlow_medium</item>
         <item name="android:textColor">@color/on_surface</item>
     </style>
     <style name="Type.Label" parent="android:style/TextAppearance.Material.Caption">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/on_surface_variant</item>
+    </style>
+    <style name="Type.Poster" parent="Type.Headline">
+        <item name="android:textSize">68sp</item>
+        <item name="android:letterSpacing">-0.04</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+    <style name="Type.Value" parent="Type.Body.Emphasis">
+        <item name="android:textSize">36sp</item>
+        <item name="android:fontFamily">@font/barlow_regular</item>
     </style>
     <style name="Action.Text" parent="android:style/Widget.Material.Button.Borderless">
         <item name="android:textAllCaps">false</item>

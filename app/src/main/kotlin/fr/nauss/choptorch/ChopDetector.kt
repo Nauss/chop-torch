@@ -1,15 +1,16 @@
 package fr.nauss.choptorch
 
 import kotlin.math.abs
+import kotlin.math.pow
 import kotlin.math.sqrt
 
 /** Experimental acceleration-only recognizer; constants require physical calibration.
- * Three fixed segmentation scales share one filter and global cooldown. Each pair
+ * Four retained scales and up to four bounded light scales share a filter and cooldown. Each pair
  * requires sustained acceleration, opposite braking, then axial release on one scale.
  * Input: raw accelerometer m/s² with monotonic nanosecond sensor timestamps.
  */
 class ChopDetector @JvmOverloads constructor(sensitivity: Int = 50, private val observer: Observer? = null) {
-    /** Transition evidence aggregated over THREE scales, not intent labels or accuracy.
+    /** Transition evidence aggregated over the active fixed scales, not accuracy.
      * No samples retained. The optional observer runs synchronously on the caller.
      */
     fun interface Observer { fun onEvent(event: Event) }
@@ -17,14 +18,22 @@ class ChopDetector @JvmOverloads constructor(sensitivity: Int = 50, private val 
         INVALID_SAMPLE, DISCONTINUITY, ARMED, BRAKING, ACCELERATION_TIMEOUT,
         REVERSAL_TOO_EARLY, ACCELERATION_SUPPORT_SHORT, BRAKING_TIMEOUT,
         STROKE_TIMEOUT, BRAKING_SUPPORT_SHORT, AMPLITUDE_LOW,
-        FIRST_STROKE, FIRST_EXPIRED, PAIR_DIRECTION, PAIR_INTERVAL, RECOGNIZED
+        FIRST_STROKE, FIRST_EXPIRED, PAIR_DIRECTION, PAIR_INTERVAL, RECOGNIZED,
+        LIGHT_STROKE_TRANSVERSE, LIGHT_SCALE_CEILING
     }
     val sensitivity = sensitivity.coerceIn(0, 100)
     // Fixed scales keep existing valid candidates when sensitivity increases.
-    // Only completed-stroke amplitude evidence depends on the slider.
-    val amplitudeThreshold = if (this.sensitivity <= 50) 18.0 - this.sensitivity * 0.10
-        else 13.0 - (this.sensitivity - 50) * 0.17
-    private val scales = listOf(StrokeScale(2.5), StrokeScale(8.0), StrokeScale(13.0))
+    // Recenter the amplitude range while preserving level zero exactly.
+    // Engineering scale, not a demonstrated perceptual/physical calibration.
+    val amplitudeThreshold = 18.0 / (1.0 + 0.06 * this.sensitivity).pow(2.5)
+    // Keep all four accepted segmenters and the bounded 0.6 profile unchanged.
+    // Additional profiles are fixed proportional copies, never slider-scaled input.
+    // Strict ceiling gates only add scales as the completed threshold falls;
+    // no bounded scale participates at level zero.
+    private val scales = listOf(StrokeScale(2.5), StrokeScale(8.0), StrokeScale(13.0), StrokeScale(1.2)) +
+        listOf(0.6, 0.3, 0.15, 0.075).filter { amplitudeThreshold < 2.3 * (it / 0.6) }
+            .map { StrokeScale(it, bounded = true) }
+    val scaleCount: Int get() = scales.size
     private var last = 0L
     private var warmUntil = 0L
     private var cooldownUntil = 0L
@@ -63,12 +72,17 @@ class ChopDetector @JvmOverloads constructor(sensitivity: Int = 50, private val 
     }
 
     /** Each pair completes on ONE scale; never combine halves from different axes.
-     * Events aggregate three bounded scales, not three distinct physical gestures.
+     * Events aggregate segmentation scales, not distinct physical gestures.
      */
-    private inner class StrokeScale(private val arm: Double) {
-        private val accelerationSupport = maxOf(2.0, arm * 0.35)
-        private val brakeEntry = maxOf(2.5, arm * 0.65)
-        private val brakingSupport = maxOf(2.0, arm * 0.30)
+    private inner class StrokeScale(private val arm: Double, private val bounded: Boolean = false) {
+        private val proportion = if (bounded) arm / 0.6 else 1.0
+        private val ceiling = 2.3 * proportion
+        private val accelerationSupport = if (bounded) 0.4 * proportion else if (arm < 2.5) 0.8 else maxOf(2.0, arm * 0.35)
+        private val brakeEntry = if (bounded) 0.6 * proportion else if (arm < 2.5) 1.2 else maxOf(2.5, arm * 0.65)
+        private val brakingSupport = if (bounded) 0.4 * proportion else if (arm < 2.5) 0.8 else maxOf(2.0, arm * 0.30)
+        private var peakMagnitude = 0.0
+        private var axialEnergy = 0.0
+        private var transverseEnergy = 0.0
         private var phase = 0
         private var began = 0L
         private var phaseAt = 0L
@@ -89,6 +103,8 @@ class ChopDetector @JvmOverloads constructor(sensitivity: Int = 50, private val 
             supportNs = 0L; supportedLast = true
             accelerationIntegral = doubleArrayOf(0.0, 0.0, 0.0)
             accelerationPeak = magnitude; brakingPeak = 0.0
+            axialEnergy = 0.0; transverseEnergy = 0.0
+            peakMagnitude = magnitude
             report(Event.ARMED)
         }
 
@@ -97,6 +113,11 @@ class ChopDetector @JvmOverloads constructor(sensitivity: Int = 50, private val 
             // Recognition still checks the start-to-start interval (150–600 ms).
             if (phase == 0 && firstDirection != null && timestampNs - firstAt > 650_000_000L) reject(Event.FIRST_EXPIRED)
             val dot = linear.indices.sumOf { linear[it] * direction[it] }
+            if (phase != 0) {
+                peakMagnitude = maxOf(peakMagnitude, magnitude)
+                axialEnergy += dot * dot * (stepNs / 1e9)
+                transverseEnergy += maxOf(0.0, magnitude * magnitude - dot * dot) * (stepNs / 1e9)
+            }
             val elapsed = timestampNs - phaseAt
             when (phase) {
                 0 -> if (magnitude >= arm) start(timestampNs, linear, magnitude)
@@ -130,6 +151,22 @@ class ChopDetector @JvmOverloads constructor(sensitivity: Int = 50, private val 
                     else if (timestampNs - began > 440_000_000L) reject(Event.STROKE_TIMEOUT)
                     else if (!supported) {
                         if (supportNs < 40_000_000L) { reject(Event.BRAKING_SUPPORT_SHORT); return false }
+                        // This scale fills only the new low-amplitude envelope;
+                        // never pre-empt a stronger candidate on a retained scale.
+                        if (bounded && peakMagnitude >= ceiling) {
+                            reject(Event.LIGHT_SCALE_CEILING); return false
+                        }
+                        // Lower completed amplitude also admits rotating ellipses
+                        // on the old 2.5 scale. Guard ALL newly admitted light
+                        // evidence, but preserve the old >=4.5 / >=2.25 envelope.
+                        // The extra scale always requires this quality check.
+                        // Require predominantly axial energy over the WHOLE light stroke,
+                        // including the zero crossing, not perfectly straight samples.
+                        // Fixed and slider-independent; prior segmentation is unchanged.
+                        val lightEvidence = arm < 2.5 || accelerationPeak < 4.5 || brakingPeak < 2.25
+                        if (lightEvidence && transverseEnergy > axialEnergy * 0.25) {
+                            reject(Event.LIGHT_STROKE_TRANSVERSE); return false
+                        }
                         if (accelerationPeak < amplitudeThreshold || brakingPeak < amplitudeThreshold * 0.5) {
                             reject(Event.AMPLITUDE_LOW); return false
                         }

@@ -8,34 +8,60 @@
     <ScrollView android:id="@+id/scroll" android:layout_width="match_parent" android:layout_height="match_parent"
         android:fillViewport="true" android:clipToPadding="true">
     <LinearLayout android:id="@+id/content" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal" android:orientation="vertical" android:padding="24dp">
-        <TextView style="@style/Type.Headline" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:gravity="center_vertical" android:layout_marginTop="16dp" android:drawableStart="@drawable/ic_torch"
-            android:drawablePadding="12dp" android:text="@string/app_name" android:accessibilityHeading="true" />
-        <TextView style="@style/Type.Body" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="20dp" android:text="@string/intro" />
+        android:layout_gravity="center_horizontal" android:orientation="vertical">
+        <LinearLayout android:id="@+id/poster" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="24dp" android:background="@color/poster">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+                <TextView style="@style/Type.Headline" android:layout_width="0dp" android:layout_weight="1"
+                    android:layout_height="wrap_content" android:text="@string/app_name" android:textColor="@color/ink"
+                    android:accessibilityHeading="true" />
+                <ImageButton android:id="@+id/help_button" android:layout_width="48dp" android:layout_height="48dp"
+                    android:padding="12dp" android:src="@drawable/ic_info" android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/help_open" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/hero" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="12dp">
+                <TextView android:id="@+id/hero_title" style="@style/Type.Poster" android:layout_width="0dp"
+                    android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/hero_title"
+                    android:accessibilityHeading="true" />
+                <ImageView android:id="@+id/phone_art" android:layout_width="156dp" android:layout_height="228dp"
+                    android:src="@drawable/engraved_phone" android:scaleType="fitCenter" android:importantForAccessibility="no" />
+            </LinearLayout>
+            <TextView android:id="@+id/hero_tagline" style="@style/Type.Body" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textColor="@color/ink"
+                android:text="@string/hero_tagline" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="24dp" android:background="@color/surface_container">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
-            android:layout_marginTop="32dp" android:padding="20dp" android:background="@drawable/surface_panel">
+            android:layout_marginBottom="24dp">
             <Switch android:id="@+id/activation" android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:minHeight="56dp" android:text="@string/detection" android:textAppearance="@style/Type.Title"
-                android:switchPadding="16dp" android:showText="false"
-                android:thumbTint="@color/switch_thumb" android:trackTint="@color/switch_track" />
+                android:switchPadding="16dp" android:showText="false" android:switchMinWidth="56dp"
+                android:thumb="@drawable/activation_thumb" android:track="@drawable/activation_track"
+                android:thumbTint="@null" android:trackTint="@null" android:splitTrack="false" />
             <TextView android:id="@+id/state" style="@style/Type.Body.Emphasis"
                 android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"
                 android:accessibilityLiveRegion="polite" />
             <TextView android:id="@+id/detail" style="@style/Type.Body" android:layout_width="match_parent"
                 android:layout_height="wrap_content" android:layout_marginTop="4dp" android:accessibilityLiveRegion="polite" />
+            <TextView android:id="@+id/torch_state" style="@style/Type.Body" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="12dp"
+                android:accessibilityLiveRegion="polite" />
             <Button android:id="@+id/recovery" style="@style/Action.Text" android:layout_width="match_parent"
                 android:layout_height="wrap_content" android:text="@string/notification_settings"
                 android:layout_marginTop="12dp" android:visibility="gone" />
         </LinearLayout>
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/control_normal" />
         <TextView android:id="@+id/sensitivity_label" style="@style/Type.Title" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_marginTop="32dp" android:text="@string/sensitivity"
+            android:layout_height="wrap_content" android:layout_marginTop="24dp" android:text="@string/sensitivity"
             android:accessibilityHeading="true" android:labelFor="@id/sensitivity" />
-        <TextView android:id="@+id/sensitivity_value" style="@style/Type.Body.Emphasis" android:layout_width="match_parent"
+        <TextView android:id="@+id/sensitivity_value" style="@style/Type.Value" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:layout_marginTop="8dp" android:importantForAccessibility="no" />
         <SeekBar android:id="@+id/sensitivity" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:minHeight="48dp" android:max="100" android:contentDescription="@string/sensitivity" />
+            android:minHeight="48dp" android:max="100" android:thumb="@drawable/slider_thumb"
+            android:progressTint="@color/on_surface" android:progressBackgroundTint="@color/control_normal"
+            android:contentDescription="@string/sensitivity" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"
             android:importantForAccessibility="noHideDescendants">
             <TextView style="@style/Type.Label" android:layout_width="0dp" android:layout_weight="1"
@@ -45,28 +71,6 @@
         </LinearLayout>
         <TextView style="@style/Type.Body" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="12dp" android:text="@string/sensitivity_hint" />
-        <Button android:id="@+id/help_button" style="@style/Action.Text" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_marginTop="32dp" android:text="@string/help_open" />
-        <LinearLayout android:id="@+id/help" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical" android:visibility="gone">
-            <TextView style="@style/Type.Title" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:layout_marginTop="24dp" android:text="@string/help_gesture_title" android:accessibilityHeading="true" />
-            <TextView style="@style/Type.Body" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" android:text="@string/help_gesture" />
-            <TextView style="@style/Type.Title" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:layout_marginTop="24dp" android:text="@string/help_limits_title" android:accessibilityHeading="true" />
-            <TextView style="@style/Type.Body" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" android:text="@string/help_limits" />
-            <TextView android:id="@+id/battery_info" style="@style/Type.Body" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:layout_marginTop="16dp" />
-            <Button android:id="@+id/battery_settings" style="@style/Action.Text" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/battery_settings" />
-            <TextView style="@style/Type.Body" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:layout_marginTop="24dp" android:text="@string/privacy" />
-            <TextView android:id="@+id/version" style="@style/Type.Label" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:layout_marginTop="16dp" />
-            <Button android:id="@+id/source" style="@style/Action.Text" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/source" />
         </LinearLayout>
     </LinearLayout>
     </ScrollView>

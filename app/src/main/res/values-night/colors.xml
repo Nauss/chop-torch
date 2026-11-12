@@ -1,8 +1,9 @@
 <resources>
-    <color name="surface">#171918</color>
-    <color name="surface_container">#242724</color>
-    <color name="on_surface">#F0F1EB</color>
-    <color name="on_surface_variant">#BFC3B9</color>
-    <color name="primary">#E5CA7B</color>
-    <color name="control_normal">#A2A79B</color>
+    <color name="surface">#111211</color>
+    <color name="surface_container">#111211</color>
+
+    <color name="on_surface">#EFEFE8</color>
+    <color name="on_surface_variant">#C5BDB3</color>
+    <color name="primary">#EFEFE8</color>
+    <color name="control_normal">#75695D</color>
 </resources>

@@ -4,7 +4,7 @@ import java.nio.file.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-/** PRIVATE replay of the actual compiled engine. No translated recognizer.
+/** PRIVATE replay of the compiled LEGACY comparator, not DirectionalChopDetector.
  * Reflection only supports transition diagnostics on the historical 0.2 engine.
  * These legacy causes are inferred from its exact guards; new engines emit events.
  */
@@ -131,6 +131,10 @@ class ReplayCapture {
             }
             System.out.println("sensitivity="+sensitivity+" samples="+rows.size()+" recognized="+hits.size()+" hit_relative_ms="+hits+" admissionRejected="+admissionRejected+" freshnessDisagreements="+mismatches+" causes="+counts);
         }
-        System.out.println("mode="+mode+" causes="+(legacy?"INFERRED_0.2_GUARDS":"PRODUCTION_EVENTS_AGGREGATED_3_SCALES")+"; cold filter, missing prehistory, no accuracy denominator.");
+        String causes = legacy ? "INFERRED_0.2_GUARDS" : "LEGACY_COMPARATOR_EVENTS_AGGREGATED_SCALES_BY_SETTING="
+            + "0:" + ((List<?>)field(new ChopDetector(0), "scales")).size()
+            + ",50:" + ((List<?>)field(new ChopDetector(50), "scales")).size()
+            + ",100:" + ((List<?>)field(new ChopDetector(100), "scales")).size();
+        System.out.println("mode="+mode+" causes="+causes+"; cold filter, missing prehistory, no accuracy denominator.");
     }
 }

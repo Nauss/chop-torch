@@ -10,7 +10,8 @@ object LiveState {
     data class State(
         val running: Boolean = false,
         val error: Int = 0,
-        val torch: Int = R.string.torch_unknown
+        val torch: Int = R.string.torch_unknown,
+        val context: Int = 0
     )
     @Volatile var state = State()
         private set

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Local PRIVATE capture replay; no capture is bundled or sent over the network.
+"""Local PRIVATE legacy ChopDetector comparator replay, NOT the production directional detector.
+No capture is bundled or sent over the network.
 Build :app:compileDebugKotlin first. Supply an explicit JSON export path.
 Output includes personal detection times: redirect outside Git.
 Modes are explicit. V2 defaults to recorded admission; v1 lacks receipt timestamps.
@@ -49,7 +50,7 @@ def main() -> None:
             raise ValueError('Malformed receipt/admission/sensitivity data')
     classes = ROOT / 'app/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes'
     if not (classes / 'fr/nauss/choptorch/ChopDetector.class').exists():
-        raise RuntimeError('Compile the production Kotlin detector first')
+        raise RuntimeError('Compile the legacy Kotlin comparator first')
     cache = Path(os.environ.get('GRADLE_USER_HOME', str(Path.home() / '.gradle')))
     jars = list((cache / 'caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.2.10').glob('*/*.jar'))
     if len(jars) != 1:
@@ -66,7 +67,7 @@ def main() -> None:
         elif args.detail:
             command.append('--detail')
         print('PRIVATE UNANNOTATED capture; sha256=' + digest, flush=True)
-        print('Replay at fixed sensitivities 0/50/100; mode=' + mode + '; per-sample sensitivity is validated but deliberately overridden.', flush=True)
+        print('LEGACY COMPARATOR replay at fixed sensitivities 0/50/100; mode=' + mode + '; per-sample sensitivity is validated but deliberately overridden. Not directional production validation.', flush=True)
         print('Compiled detector SHA256=' + hashlib.sha256((classes / 'fr/nauss/choptorch/ChopDetector.class').read_bytes()).hexdigest(), flush=True)
         # Kotlin inner classes contain the actual segmentation guards. The outer
         # class hash alone cannot identify an experimental detector revision.

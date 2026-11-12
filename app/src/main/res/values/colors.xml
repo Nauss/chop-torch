@@ -1,8 +1,11 @@
 <resources>
-    <color name="surface">#FAF9F6</color>
-    <color name="surface_container">#EEEDE8</color>
-    <color name="on_surface">#20211F</color>
-    <color name="on_surface_variant">#585B54</color>
-    <color name="primary">#665219</color>
-    <color name="control_normal">#73766D</color>
+    <color name="surface">#111211</color>
+    <color name="surface_container">#111211</color>
+
+    <color name="on_surface">#EFEFE8</color>
+    <color name="on_surface_variant">#C5BDB3</color>
+    <color name="primary">#EFEFE8</color>
+    <color name="control_normal">#75695D</color>
+    <color name="poster">#E44735</color>
+    <color name="ink">#191512</color>
 </resources>

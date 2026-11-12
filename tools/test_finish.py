@@ -29,11 +29,15 @@ class FinishContract(unittest.TestCase):
     def test_minimal_permissions_and_components(self):
         manifest=ET.parse(MAIN/'AndroidManifest.xml').getroot()
         permissions={n.get(ANDROID+'name') for n in manifest.findall('uses-permission')}
-        self.assertEqual({'android.permission.FOREGROUND_SERVICE','android.permission.FOREGROUND_SERVICE_SPECIAL_USE','android.permission.POST_NOTIFICATIONS','android.permission.RECEIVE_BOOT_COMPLETED'},permissions)
+        self.assertEqual({'android.permission.FOREGROUND_SERVICE','android.permission.FOREGROUND_SERVICE_SPECIAL_USE','android.permission.POST_NOTIFICATIONS','android.permission.RECEIVE_BOOT_COMPLETED','android.permission.VIBRATE'},permissions)
         service=manifest.find('application/service')
         self.assertEqual('false',service.get(ANDROID+'exported'))
         self.assertEqual('specialUse',service.get(ANDROID+'foregroundServiceType'))
-        self.assertEqual(1,len(manifest.findall('application/activity')))
+        activities = {n.get(ANDROID+'name'): n for n in manifest.findall('application/activity')}
+        self.assertEqual({'.MainActivity', '.HelpActivity'}, set(activities))
+        self.assertEqual('true', activities['.MainActivity'].get(ANDROID+'exported'))
+        self.assertEqual('false', activities['.HelpActivity'].get(ANDROID+'exported'))
+        self.assertEqual('true', activities['.HelpActivity'].get(ANDROID+'enableOnBackInvokedCallback'))
         receiver=manifest.find('application/receiver')
         self.assertEqual('false', receiver.get(ANDROID+'exported'))
         self.assertEqual({'android.intent.action.BOOT_COMPLETED','android.intent.action.MY_PACKAGE_REPLACED'},
@@ -45,12 +49,16 @@ class FinishContract(unittest.TestCase):
         self.assertEqual(set(en),set(fr))
         for key in en:
             self.assertEqual(en[key].count('%1$'),fr[key].count('%1$'),key)
-        for node in ET.parse(MAIN/'res/layout/activity_main.xml').iter():
-            for attr in ['text','contentDescription']:
-                value=node.get(ANDROID+attr)
-                if value: self.assertTrue(value.startswith('@string/'),value)
+        for layout in ['activity_main.xml', 'activity_help.xml']:
+            for node in ET.parse(MAIN/'res/layout'/layout).iter():
+                for attr in ['text','contentDescription','navigationContentDescription','title']:
+                    value=node.get(ANDROID+attr)
+                    if value: self.assertTrue(value.startswith('@string/'),value)
 
     def test_theme_text_and_control_contrast(self):
+        base_colors={n.get('name'): n.text for n in ET.parse(MAIN/'res/values/colors.xml').getroot()}
+        self.assertGreaterEqual(contrast(base_colors['ink'],base_colors['poster']),4.5)
+        self.assertGreaterEqual(contrast(base_colors['poster'],base_colors['surface']),3)
         for mode in ['values','values-night']:
             colors={n.get('name'): n.text for n in ET.parse(MAIN/'res'/mode/'colors.xml').getroot()}
             for background in ['surface','surface_container']:

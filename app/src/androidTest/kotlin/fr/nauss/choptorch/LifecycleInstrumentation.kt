@@ -7,11 +7,30 @@ import android.os.Bundle
 
 /** Runs against real framework services, only on a disposable emulator. No test code in release. */
 class LifecycleInstrumentation : Instrumentation() {
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); start() }
+    private var uiSuite = false
+    private var reliabilitySuite = false
+    override fun onCreate(arguments: Bundle?) {
+        super.onCreate(arguments)
+        uiSuite = arguments?.getString("suite") == "ui"
+        reliabilitySuite = arguments?.getString("suite") == "reliability"
+        start()
+    }
     override fun onStart() {
         val results = Bundle()
         try {
             check(android.os.Build.HARDWARE in setOf("ranchu", "goldfish")) { "Disposable emulator required" }
+            if (reliabilitySuite) {
+                ReliabilityInstrumentation.run(this)
+                results.putString("stream", "PASS framework proximity/context and synthetic directional/gate controls; not field or motor validation\n")
+                finish(-1, results)
+                return
+            }
+            if (uiSuite) {
+                UiRegression.run(this)
+                results.putString("stream", "PASS native UI regression\n")
+                finish(-1, results)
+                return
+            }
             val prefs = targetContext.getSharedPreferences("settings", 0)
             runOnMainSync { targetContext.stopService(Intent(targetContext, ChopService::class.java)) }
             Thread.sleep(400)
@@ -72,7 +91,7 @@ class LifecycleInstrumentation : Instrumentation() {
             results.putString("stream", "PASS fresh/disabled, enabled, duplicate start, notification stop, disabled boot, enabled update, blocked notification channel actual services\n")
             finish(-1, results)
         } catch (error: Throwable) {
-            results.putString("stream", "FAIL ${error.javaClass.simpleName}: ${error.message}\n")
+            results.putString("stream", "FAIL ${error.stackTraceToString()}\n")
             finish(0, results)
         }
     }
